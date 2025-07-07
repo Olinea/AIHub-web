@@ -1,19 +1,12 @@
 <script setup lang="ts">
 import {
-  ArrowDown,
-  ArrowUp,
-  Bell,
   Copy,
-  CornerUpLeft,
   CornerUpRight,
   FileText,
-  GalleryVerticalEnd,
-  LineChart,
   Link,
   MoreHorizontal,
   Settings2,
   Star,
-  Trash,
   Trash2,
 } from 'lucide-vue-next'
 
@@ -62,39 +55,7 @@ const data = [
       label: 'Move to Trash',
       icon: Trash2,
     },
-  ],
-  [
-    {
-      label: 'Undo',
-      icon: CornerUpLeft,
-    },
-    {
-      label: 'View analytics',
-      icon: LineChart,
-    },
-    {
-      label: 'Version History',
-      icon: GalleryVerticalEnd,
-    },
-    {
-      label: 'Show delete pages',
-      icon: Trash,
-    },
-    {
-      label: 'Notifications',
-      icon: Bell,
-    },
-  ],
-  [
-    {
-      label: 'Import',
-      icon: ArrowUp,
-    },
-    {
-      label: 'Export',
-      icon: ArrowDown,
-    },
-  ],
+  ]
 ]
 
 const isOpen = ref(false)

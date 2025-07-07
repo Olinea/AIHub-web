@@ -28,7 +28,6 @@ defineProps<{
   chat: {
     name: string
     url: string
-    emoji: string
   }[]
 }>()
 
@@ -42,7 +41,6 @@ const { isMobile } = useSidebar()
       <SidebarMenuItem v-for="item in chat" :key="item.name">
         <SidebarMenuButton as-child>
           <a :href="item.url" :title="item.name">
-            <span>{{ item.emoji }}</span>
             <span>{{ item.name }}</span>
           </a>
         </SidebarMenuButton>
@@ -78,13 +76,6 @@ const { isMobile } = useSidebar()
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </SidebarMenuItem>
-
-      <SidebarMenuItem>
-        <SidebarMenuButton class="text-sidebar-foreground/70">
-          <MoreHorizontal />
-          <span>More</span>
-        </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
   </SidebarGroup>

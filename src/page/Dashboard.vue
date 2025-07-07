@@ -1,23 +1,19 @@
 <script lang="ts">
-export const description = 'A sidebar in a popover.'
-export const iframeHeight = '800px'
+  export const description = 'A sidebar in a popover.'
+  export const iframeHeight = '800px'
 </script>
 
 <script setup lang="ts">
-import AppSidebar from '@/components/AppSidebar.vue'
-import NavActions from '@/components/NavActions.vue'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from '@/components/ui/breadcrumb'
-import { Separator } from '@/components/ui/separator'
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/sidebar'
+  import AppSidebar from '@/components/AppSidebar.vue'
+  import NavActions from '@/components/NavActions.vue'
+  import { Separator } from '@/components/ui/separator'
+  import {
+    SidebarInset,
+    SidebarProvider,
+    SidebarTrigger,
+  } from '@/components/ui/sidebar'
+  import Switcher from '@/components/AiSwitcher.vue'
+
 </script>
 
 <template>
@@ -28,15 +24,10 @@ import {
         <div class="flex flex-1 items-center gap-2 px-3">
           <SidebarTrigger />
           <Separator orientation="vertical" class="mr-2 h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbPage class="line-clamp-1">
-                  Project Management & Task Tracking
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+          <div class="max-w-[300px] min-w-[200px]">
+            <Switcher />
+          </div>
+
         </div>
         <div class="ml-auto px-3">
           <NavActions />
