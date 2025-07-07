@@ -29,7 +29,7 @@
     navMain: [
       {
         title: 'Home',
-        url: '#',
+        url: '/',
         icon: Home,
         isActive: true,
       },
@@ -47,17 +47,17 @@
     navSecondary: [
       {
         title: 'Settings',//ai设置
-        url: '#',
+        url: '/settings',
         icon: Settings2,
       },
       {
         title: 'Templates',//ai模板
-        url: '#',
+        url: '/templates',
         icon: Blocks,
       },
       {
         title: 'Help',// 系统帮助
-        url: '#',
+        url: '/help',
         icon: MessageCircleQuestion,
       },
     ],
