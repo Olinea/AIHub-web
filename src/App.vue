@@ -1,34 +1,21 @@
 <script setup lang="ts">
-import AppSidebar from '@/components/AppSidebar.vue'
-import NavActions from '@/components/NavActions.vue'
-import { Separator } from '@/components/ui/separator'
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/sidebar'
-import Switcher from '@/components/AiSwitcher.vue'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
+import AuthLayout from '@/layouts/AuthLayout.vue'
+
+const route = useRoute()
+
+const layoutComponent = computed(() => {
+  switch (route.meta.layout) {
+    case 'Auth':
+      return AuthLayout
+    default:
+      return DefaultLayout
+  }
+})
 </script>
 
 <template>
-  <SidebarProvider>
-    <AppSidebar />
-    <SidebarInset>
-      <header class="flex h-14 shrink-0 items-center gap-2">
-        <div class="flex flex-1 items-center gap-2 px-3">
-          <SidebarTrigger />
-          <Separator orientation="vertical" class="mr-2 h-4" />
-          <div class="max-w-[300px] min-w-[200px]">
-            <Switcher />
-          </div>
-        </div>
-        <div class="ml-auto px-3">
-          <NavActions />
-        </div>
-      </header>
-      <div class="flex flex-1 flex-col">
-        <router-view />
-      </div>
-    </SidebarInset>
-  </SidebarProvider>
+  <component :is="layoutComponent" />
 </template>
