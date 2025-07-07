@@ -3,6 +3,7 @@ import Dashboard from '@/page/Dashboard.vue'
 import Settings from '@/page/Settings.vue'
 import Templates from '@/page/Templates.vue'
 import Help from '@/page/Help.vue'
+import NotFound from '@/page/NotFound.vue'
 
 const routes = [
   {
@@ -24,6 +25,11 @@ const routes = [
     path: '/help',
     name: 'Help',
     component: Help
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: NotFound
   }
 ]
 

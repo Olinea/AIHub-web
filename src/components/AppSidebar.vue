@@ -1,4 +1,6 @@
 <script setup lang="ts">
+  import { computed } from 'vue'
+  import { useRoute } from 'vue-router'
   import {
     Blocks,
     Home,
@@ -23,25 +25,28 @@
   } from '@/components/ui/sidebar'
 
   const props = defineProps<SidebarProps>()
+  const route = useRoute()
 
   // This is sample data.
-  const data = {
+  const data = computed(() => ({
     navMain: [
       {
         title: 'Home',
         url: '/',
         icon: Home,
-        isActive: true,
+        isActive: route.path === '/',
       },
       {
         title: 'Search',
         url: '#',
         icon: Search,
+        isActive: false,
       },
       {
         title: 'Ask AI Role',
         url: '#',
         icon: Sparkles,
+        isActive: false,
       },
     ],
     navSecondary: [
@@ -49,16 +54,19 @@
         title: 'Settings',//ai设置
         url: '/settings',
         icon: Settings2,
+        isActive: route.path === '/settings',
       },
       {
         title: 'Templates',//ai模板
         url: '/templates',
         icon: Blocks,
+        isActive: route.path === '/templates',
       },
       {
         title: 'Help',// 系统帮助
         url: '/help',
         icon: MessageCircleQuestion,
+        isActive: route.path === '/help',
       },
     ],
     chat: [
@@ -67,11 +75,11 @@
         url: '#',
       },
     ]
-  }
+  }))
 </script>
 
 <template>
-  <Sidebar class="border-r-0" v-bind="props">
+  <Sidebar class="border-r-0" collapsible="icon" :side="props.side" :variant="props.variant">
     <SidebarHeader>
       <NavMain :items="data.navMain" />
     </SidebarHeader>
