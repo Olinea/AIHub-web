@@ -13,6 +13,7 @@
   import NavChat from '@/components/NavChat.vue'
   import NavMain from '@/components/NavMain.vue'
   import NavSecondary from '@/components/NavSecondary.vue'
+  import NavUser from '@/components/NavUser.vue'
 
 
   import {
@@ -89,6 +90,8 @@
     <SidebarFooter>
     </SidebarFooter>
     <NavSecondary :items="data.navSecondary" />
+    <NavUser />
+
     <SidebarRail />
   </Sidebar>
 </template>

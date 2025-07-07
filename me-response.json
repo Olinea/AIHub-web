@@ -1,0 +1,19 @@
+{
+    "code": 200,
+    "message": "获取用户信息成功",
+    "data": {
+        "accessToken": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0dzlpemxfZzF5OTdAZ21haWwuY29tIiwiaWF0IjoxNzUxODkwODcyLCJleHAiOjE3NTE5NzcyNzJ9.Vj4ES53ea9C0QDKg8BDzslgMq4H7Q9nSoRZdMt3fexqiknvlaOx3Lid441eBb1TiDV_jZwyGah2UY_XMOi4m1Q",
+        "tokenType": "Bearer",
+        "expiresIn": 86400,
+        "email": "tw9izl_g1y97@gmail.com",
+        "user": {
+            "id": 3,
+            "username": "律天娇",
+            "email": "tw9izl_g1y97@gmail.com",
+            "creditBalance": 10.0000,
+            "createdAt": "2025-07-07T11:20:13.548+00:00",
+            "updatedAt": "2025-07-07T11:20:13.548+00:00"
+        }
+    },
+    "timestamp": 1751890872464
+}
