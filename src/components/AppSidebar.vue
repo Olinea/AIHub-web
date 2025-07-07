@@ -1,11 +1,7 @@
 <script setup lang="ts">
   import {
-    AudioWaveform,
     Blocks,
-    Calendar,
-    Command,
     Home,
-
     MessageCircleQuestion,
     Search,
     Settings2,
@@ -43,24 +39,24 @@
         icon: Search,
       },
       {
-        title: 'Ask AI',
+        title: 'Ask AI Role',
         url: '#',
         icon: Sparkles,
       },
     ],
     navSecondary: [
       {
-        title: 'Settings',
+        title: 'Settings',//ai设置
         url: '#',
         icon: Settings2,
       },
       {
-        title: 'Templates',
+        title: 'Templates',//ai模板
         url: '#',
         icon: Blocks,
       },
       {
-        title: 'Help',
+        title: 'Help',// 系统帮助
         url: '#',
         icon: MessageCircleQuestion,
       },

@@ -1,88 +1,79 @@
 <script setup lang="ts">
-import {
-  Copy,
-  CornerUpRight,
-  FileText,
-  Link,
-  MoreHorizontal,
-  Settings2,
-  Star,
-  Trash2,
-} from 'lucide-vue-next'
+  import {
+    Copy,
+    CornerUpRight,
+    FileText,
+    Link,
+    MoreHorizontal,
+    Settings2,
+    Trash2,
+  } from 'lucide-vue-next'
 
-import { ref } from 'vue'
-import { Button } from '@/components/ui/button'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar'
+  import { ref } from 'vue'
+  import { Button } from '@/components/ui/button'
+  import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+  } from '@/components/ui/popover'
+  import {
+    Sidebar,
+    SidebarContent,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+  } from '@/components/ui/sidebar'
 
-const data = [
-  [
-    {
-      label: 'Customize Page',
-      icon: Settings2,
-    },
-    {
-      label: 'Turn into wiki',
-      icon: FileText,
-    },
-  ],
-  [
-    {
-      label: 'Copy Link',
-      icon: Link,
-    },
-    {
-      label: 'Duplicate',
-      icon: Copy,
-    },
-    {
-      label: 'Move to',
-      icon: CornerUpRight,
-    },
-    {
-      label: 'Move to Trash',
-      icon: Trash2,
-    },
+  import DarkMode from '@/components/DarkMode.vue'
+  const data = [
+    [
+      {
+        label: 'Customize Page',
+        icon: Settings2,
+      },
+      {
+        label: 'Turn into wiki',
+        icon: FileText,
+      },
+    ],
+    [
+      {
+        label: 'Copy Link',
+        icon: Link,
+      },
+      {
+        label: 'Duplicate',
+        icon: Copy,
+      },
+      {
+        label: 'Move to',
+        icon: CornerUpRight,
+      },
+      {
+        label: 'Move to Trash',
+        icon: Trash2,
+      },
+    ]
   ]
-]
 
-const isOpen = ref(false)
+  const isOpen = ref(false)
 </script>
 
 <template>
   <div class="flex items-center gap-2 text-sm">
     <div class="hidden font-medium text-muted-foreground md:inline-block">
-      Edit Oct 08
+      时间
     </div>
-    <Button variant="ghost" size="icon" class="h-7 w-7">
-      <Star />
-    </Button>
+    <DarkMode />
     <Popover v-model:open="isOpen">
       <PopoverTrigger as-child>
-        <Button
-          variant="ghost"
-          size="icon"
-          class="h-7 w-7 data-[state=open]:bg-accent"
-        >
+        <Button variant="ghost" size="icon" class="h-7 w-7 data-[state=open]:bg-accent">
           <MoreHorizontal />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        class="w-56 overflow-hidden rounded-lg p-0"
-        align="end"
-      >
+      <PopoverContent class="w-56 overflow-hidden rounded-lg p-0" align="end">
         <Sidebar collapsible="none" class="bg-transparent">
           <SidebarContent>
             <SidebarGroup v-for="(group, index) in data" :key="index" class="border-b last:border-none">

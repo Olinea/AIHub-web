@@ -1,8 +1,3 @@
-<script lang="ts">
-  export const description = 'A sidebar in a popover.'
-  export const iframeHeight = '800px'
-</script>
-
 <script setup lang="ts">
   import AppSidebar from '@/components/AppSidebar.vue'
   import NavActions from '@/components/NavActions.vue'
@@ -27,7 +22,7 @@
           <div class="max-w-[300px] min-w-[200px]">
             <Switcher />
           </div>
-
+          
         </div>
         <div class="ml-auto px-3">
           <NavActions />
