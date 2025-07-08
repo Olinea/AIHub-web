@@ -10,6 +10,7 @@ import Login from '@/page/Login.vue'
 // 管理页面组件
 import ManageIndex from '@/page/manage/Index.vue'
 import ManageUsers from '@/page/manage/Users.vue'
+import ManageAiModels from '@/page/manage/AiModels.vue'
 import ManageAnalytics from '@/page/manage/Analytics.vue'
 import ManageSystem from '@/page/manage/System.vue'
 import ManageSecurity from '@/page/manage/Security.vue'
@@ -58,6 +59,12 @@ const routes = [
     path: '/manage/users',
     name: 'ManageUsers',
     component: ManageUsers,
+    meta: { requiresAuth: true, requiresAdmin: true, layout: 'Manage' }
+  },
+  {
+    path: '/manage/ai-models',
+    name: 'ManageAiModels',
+    component: ManageAiModels,
     meta: { requiresAuth: true, requiresAdmin: true, layout: 'Manage' }
   },
   {

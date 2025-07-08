@@ -9,7 +9,8 @@
     Database,
     FileText,
     Home,
-    LogOut
+    LogOut,
+    Bot
   } from 'lucide-vue-next'
 
   import {
@@ -38,6 +39,13 @@
       url: '/manage/users',
       icon: Users,
       isActive: route.path === '/manage/users',
+    },
+    {
+      id: 'ai-models',
+      title: 'AI模型管理',
+      url: '/manage/ai-models',
+      icon: Bot,
+      isActive: route.path === '/manage/ai-models',
     },
     {
       id: 'analytics',
