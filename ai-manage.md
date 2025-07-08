@@ -294,9 +294,14 @@ POST /api/admin/ai-models/{id}/test-connection
 > 200 Response
 
 ```
-{"code":200,"message":"操作成功","data":"string","timestamp":1625644800000}
+{
+    "code": 200,
+    "message": "API连接测试完成",
+    "data": "🔍 测试模型信息:\n模型名称: gemini-1.5-pro\n提供商: Google\nAPI端点: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent\nAPI密钥: AIzaSyA4***0h68Eykw\n项目ID: your-google-cloud-project-id\n\n📊 测试结果:\n✅ Google API连接测试成功\n响应内容: Hello! This is a successful connection. I can",
+    "timestamp": 1751944657980
+}
 ```
-
+data使用Toast显示
 ### 返回结果
 
 |状态码|状态码含义|说明|数据模型|
