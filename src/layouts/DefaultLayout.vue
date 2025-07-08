@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import AppSidebar from '@/components/AppSidebar.vue'
-import NavActions from '@/components/NavActions.vue'
-import { Separator } from '@/components/ui/separator'
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/sidebar'
-import Switcher from '@/components/AiSwitcher.vue'
+  import AppSidebar from '@/components/AppSidebar.vue'
+  import DarkMode from '@/components/DarkMode.vue'
+
+  import { Separator } from '@/components/ui/separator'
+  import {
+    SidebarInset,
+    SidebarProvider,
+    SidebarTrigger,
+  } from '@/components/ui/sidebar'
+  import Switcher from '@/components/AiSwitcher.vue'
 </script>
 
 <template>
@@ -23,7 +24,12 @@ import Switcher from '@/components/AiSwitcher.vue'
           </div>
         </div>
         <div class="ml-auto px-3">
-          <NavActions />
+          <div class="flex items-center gap-2 text-sm">
+            <div class="hidden font-medium text-muted-foreground md:inline-block">
+              时间
+            </div>
+            <DarkMode />
+          </div>
         </div>
       </header>
       <div class="flex flex-1 flex-col">

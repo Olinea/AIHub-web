@@ -8,7 +8,8 @@ interface User {
   creditBalance: number
   avatar?: string
   createdAt: string
-  updatedAt: string
+  updatedAt: string,
+  isAdmin: number
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -32,7 +33,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     try {
-      // Note: Replace with your actual API endpoint and configuration
       const response = await fetch('/api/auth/me', {
         headers: {
           Authorization: `Bearer ${token.value}`,
