@@ -11,7 +11,7 @@ import { Users, Activity, UserPlus, UserCheck } from 'lucide-vue-next'
     </div>
 
     <!-- 统计卡片 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div class="p-6 bg-card rounded-lg border">
         <div class="flex items-center">
           <Users class="h-8 w-8 text-blue-600" />
@@ -42,15 +42,6 @@ import { Users, Activity, UserPlus, UserCheck } from 'lucide-vue-next'
         </div>
       </div>
       
-      <div class="p-6 bg-card rounded-lg border">
-        <div class="flex items-center">
-          <UserCheck class="h-8 w-8 text-orange-600" />
-          <div class="ml-4">
-            <h3 class="text-sm font-medium text-muted-foreground">已验证用户</h3>
-            <p class="text-2xl font-bold">1,089</p>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- 用户列表 -->
