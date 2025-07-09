@@ -11,6 +11,7 @@ export interface ChatMessage {
 
 export interface ChatCompletionRequest {
   id: number // 模型ID
+  conversationId?: number // 对话ID
   messages: ChatMessage[]
   stream?: boolean
   temperature?: number
@@ -45,7 +46,7 @@ export const useChatStore = defineStore('chat', () => {
   const streamContent = ref('')
 
   // 发送AI对话请求（同步）
-  async function sendMessage(messages: ChatMessage[], options?: {
+  async function sendMessage(messages: ChatMessage[], conversationId?: number, options?: {
     temperature?: number
     max_tokens?: number
     top_p?: number
@@ -67,6 +68,7 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const req: ChatCompletionRequest = {
         id: aiModelsStore.currentModelId,
+        conversationId,
         messages,
         stream: false,
         ...options
@@ -98,7 +100,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // 流式对话
-  async function sendMessageStream(messages: ChatMessage[], options?: {
+  async function sendMessageStream(messages: ChatMessage[], conversationId?: number, options?: {
     temperature?: number
     max_tokens?: number
     top_p?: number
@@ -122,6 +124,7 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const req: ChatCompletionRequest = {
         id: aiModelsStore.currentModelId,
+        conversationId,
         messages,
         stream: true,
         ...options

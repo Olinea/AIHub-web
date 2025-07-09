@@ -1,5 +1,15 @@
 <script setup lang="ts">
 import { MessageCircle, Sparkles, Settings } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { useConversationsStore } from '@/store/conversations'
+
+const router = useRouter()
+const conversationsStore = useConversationsStore()
+
+// 开始新对话
+async function startNewConversation() {
+  router.push('/conversation/new')
+}
 </script>
 
 <template>
@@ -42,7 +52,10 @@ import { MessageCircle, Sparkles, Settings } from 'lucide-vue-next'
 
         <!-- 操作按钮 -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <button class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+          <button 
+            @click="startNewConversation"
+            class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
             开始新对话
           </button>
           <router-link 

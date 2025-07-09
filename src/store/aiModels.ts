@@ -66,6 +66,9 @@ export const useAiModelsStore = defineStore('aiModels', () => {
   // 计算属性
   const hasModels = computed(() => models.value.length > 0)
   const enabledModels = computed(() => allModels.value.filter(model => model.isEnabled))
+  const currentModel = computed(() => 
+    currentModelId.value ? allModels.value.find(model => model.id === currentModelId.value) : null
+  )
 
   // API调用函数
   async function fetchModels(page = 1, size = 10, filters?: {
@@ -325,10 +328,15 @@ export const useAiModelsStore = defineStore('aiModels', () => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
       const result = await response.json()
+      console.log('fetchEnabledModels API response:', result)
       if (result.code === 200) {
         models.value = result.data
+        allModels.value = result.data // 同时更新allModels
+        console.log('Updated models:', models.value)
+        console.log('Updated allModels:', allModels.value)
         if (models.value.length && currentModelId.value === null) {
           currentModelId.value = models.value[0].id
+          console.log('Set currentModelId to:', currentModelId.value)
         }
       } else {
         throw new Error(result.message)
@@ -394,6 +402,7 @@ export const useAiModelsStore = defineStore('aiModels', () => {
     // 计算属性
     hasModels,
     enabledModels,
+    currentModel,
     
     // 方法
     fetchModels,

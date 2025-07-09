@@ -5,7 +5,8 @@ import {
   MoreHorizontal,
   Archive,
   Trash2,
-  Edit3
+  Edit3,
+  Plus
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -45,6 +46,11 @@ const { isMobile } = useSidebar()
 const router = useRouter()
 const conversationsStore = useConversationsStore()
 const { archiveConversation, deleteConversation, updateConversationTitle } = conversationsStore
+
+// 新建对话
+async function createNewConversation() {
+  router.push('/conversation/new')
+}
 
 // 编辑模式状态
 const editingId = ref<number | null>(null)
@@ -140,6 +146,15 @@ function formatTime(timeStr?: string) {
   <SidebarGroup class="group-data-[collapsible=icon]:hidden">
     <SidebarGroupLabel>对话</SidebarGroupLabel>
     <SidebarMenu>
+      <!-- 新建对话按钮 -->
+      <SidebarMenuItem>
+        <SidebarMenuButton @click="createNewConversation" class="text-muted-foreground hover:text-foreground">
+          <Plus class="mr-2 h-4 w-4" />
+          <span>新建对话</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+      
+      <!-- 对话列表 -->
       <SidebarMenuItem v-for="item in chat" :key="item.id">
         <SidebarMenuButton as-child>
           <router-link 

@@ -339,6 +339,48 @@ export const useConversationsStore = defineStore('conversations', () => {
     }
   }
 
+  // 创建新对话
+  async function createConversation(title?: string) {
+    if (!authStore.token) {
+      error.value = '未授权'
+      return null
+    }
+
+    loading.value = true
+    error.value = null
+    
+    try {
+      const response = await fetch('/api/v1/conversations/new', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title: title || '新对话' })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const result: ApiResponse<number> = await response.json()
+      
+      if (result.code === 200) {
+        // 刷新对话列表
+        await fetchConversations()
+        return result.data
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '创建对话失败'
+      console.error('创建对话失败:', err)
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   // 清空错误
   function clearError() {
     error.value = null
@@ -364,6 +406,7 @@ export const useConversationsStore = defineStore('conversations', () => {
     fetchConversations,
     fetchConversationsWithPagination,
     fetchConversationDetail,
+    createConversation,
     updateConversationTitle,
     archiveConversation,
     deleteConversation,

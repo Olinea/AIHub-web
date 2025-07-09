@@ -1,42 +1,73 @@
 <script setup lang="ts">
-import { ChevronsUpDown, Plus, Sparkles, Bot, BrainCircuit } from 'lucide-vue-next'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from '@/components/ui/sidebar'
-import { ref, onMounted, computed } from 'vue'
-import { useAiModelsStore } from '@/store/aiModels'
-import { storeToRefs } from 'pinia'
+  import { ChevronsUpDown, Plus, Sparkles, Bot, BrainCircuit } from 'lucide-vue-next'
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuShortcut,
+    DropdownMenuTrigger,
+  } from '@/components/ui/dropdown-menu'
+  import {
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    useSidebar,
+  } from '@/components/ui/sidebar'
+  import { onMounted, computed, watch } from 'vue'
+  import { useAiModelsStore } from '@/store/aiModels'
+  import { storeToRefs } from 'pinia'
 
-const { isMobile } = useSidebar()
-const aiModelsStore = useAiModelsStore()
-const { models, currentModelId, loading } = storeToRefs(aiModelsStore)
-const { fetchEnabledModels, setCurrentModel } = aiModelsStore
+  const { isMobile } = useSidebar()
+  const aiModelsStore = useAiModelsStore()
+  const { models, enabledModels, currentModelId } = storeToRefs(aiModelsStore)
+  const { fetchEnabledModels, setCurrentModel } = aiModelsStore
 
-onMounted(() => {
-  fetchEnabledModels()
-})
+  // 使用models作为备选方案
+  const displayModels = computed(() => {
+    console.log('displayModels computed:', {
+      enabledModels: enabledModels.value,
+      models: models.value
+    })
+    return enabledModels.value.length > 0 ? enabledModels.value : models.value
+  })
 
-// 图标映射
-const modelIcon = (provider: string) => {
-  if (provider.toLowerCase().includes('openai')) return Sparkles
-  if (provider.toLowerCase().includes('deepseek')) return Bot
-  if (provider.toLowerCase().includes('google')) return BrainCircuit
-  return Sparkles
-}
+  // 监听enabledModels变化
+  watch(enabledModels, (newModels) => {
+    console.log('AiSwitcher - enabledModels changed:', newModels)
+  }, { immediate: true, deep: true })
 
-const activeModel = computed(() => models.value.find(m => m.id === currentModelId.value) || models.value[0])
+  onMounted(async () => {
+    await fetchEnabledModels()
+    console.log('AiSwitcher - enabledModels:', enabledModels.value)
+    console.log('AiSwitcher - currentModelId:', currentModelId.value)
+    
+    // 如果有模型但没有选择当前模型，自动选择第一个
+    if (displayModels.value.length > 0 && !currentModelId.value) {
+      setCurrentModel(displayModels.value[0].id)
+      console.log('AiSwitcher - 自动选择第一个模型:', displayModels.value[0])
+    }
+  })
+
+  // 图标映射
+  const modelIcon = (provider: string) => {
+    if (provider.toLowerCase().includes('openai')) return Sparkles
+    if (provider.toLowerCase().includes('deepseek')) return Bot
+    if (provider.toLowerCase().includes('google')) return BrainCircuit
+    return Sparkles
+  }
+
+  const activeModel = computed(() => {
+    const modelList = displayModels.value
+    const found = modelList.find(m => m.id === currentModelId.value) || modelList[0]
+    console.log('AiSwitcher - activeModel computed:', {
+      displayModels: modelList,
+      currentModelId: currentModelId.value,
+      activeModel: found
+    })
+    return found
+  })
 </script>
 
 <template>
@@ -62,9 +93,13 @@ const activeModel = computed(() => models.value.find(m => m.id === currentModelI
         <DropdownMenuContent class="w-[--reka-dropdown-menu-trigger-width] min-w-56 rounded-lg" align="start"
           :side="isMobile ? 'bottom' : 'right'" :side-offset="4">
           <DropdownMenuLabel class="text-xs text-muted-foreground">
-            可用模型
+            可用模型 ({{ displayModels.length }})
           </DropdownMenuLabel>
-          <DropdownMenuItem v-for="(model, index) in models" :key="model.id" class="gap-2 p-2"
+          <!-- 调试信息 -->
+          <div v-if="displayModels.length === 0" class="p-2 text-xs text-red-500">
+            没有可用的模型数据
+          </div>
+          <DropdownMenuItem v-for="(model, index) in displayModels" :key="model.id" class="gap-2 p-2"
             :class="{ 'bg-accent text-accent-foreground': model.id === currentModelId }"
             @click="setCurrentModel(model.id)">
             <div class="flex size-6 items-center justify-center rounded-sm border">
