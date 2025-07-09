@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useAuthStore } from './auth'
 
 export interface AiModel {
   id: number
@@ -45,6 +46,7 @@ export interface UpdateAiModelRequest extends AddAiModelRequest {
 }
 
 export const useAiModelsStore = defineStore('aiModels', () => {
+  const authStore = useAuthStore()
   // 状态
   const models = ref<AiModel[]>([])
   const allModels = ref<AiModel[]>([])
@@ -58,6 +60,8 @@ export const useAiModelsStore = defineStore('aiModels', () => {
     provider: '',
     isEnabled: undefined as boolean | undefined
   })
+  const error = ref<string | null>(null)
+  const currentModelId = ref<number | null>(null)
 
   // 计算属性
   const hasModels = computed(() => models.value.length > 0)
@@ -69,10 +73,13 @@ export const useAiModelsStore = defineStore('aiModels', () => {
     provider?: string
     isEnabled?: boolean
   }) {
+    if (!authStore.token) {
+      error.value = '未授权'
+      return
+    }
+    loading.value = true
+    error.value = null
     try {
-      loading.value = true
-      const token = localStorage.getItem('token')
-      
       const params = new URLSearchParams({
         current: page.toString(),
         size: size.toString()
@@ -84,7 +91,7 @@ export const useAiModelsStore = defineStore('aiModels', () => {
       
       const response = await fetch(`/api/admin/ai-models?${params}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authStore.token}`,
           'Content-Type': 'application/json'
         }
       })
@@ -300,6 +307,40 @@ export const useAiModelsStore = defineStore('aiModels', () => {
     }
   }
 
+  async function fetchEnabledModels() {
+    if (!authStore.token) {
+      error.value = '未授权'
+      return
+    }
+    loading.value = true
+    error.value = null
+    try {
+      const response = await fetch('/api/ai-models/enabled', {
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      const result = await response.json()
+      if (result.code === 200) {
+        models.value = result.data
+        if (models.value.length && currentModelId.value === null) {
+          currentModelId.value = models.value[0].id
+        }
+      } else {
+        throw new Error(result.message)
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '获取模型列表失败'
+      console.error('获取模型列表失败:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
   function applyFilters(filters: {
     modelName?: string
     provider?: string
@@ -333,6 +374,10 @@ export const useAiModelsStore = defineStore('aiModels', () => {
     fetchModels(1, size, searchFilters.value)
   }
 
+  function setCurrentModel(id: number) {
+    currentModelId.value = id
+  }
+
   return {
     // 状态
     models,
@@ -343,6 +388,8 @@ export const useAiModelsStore = defineStore('aiModels', () => {
     totalPages,
     loading,
     searchFilters,
+    error,
+    currentModelId,
     
     // 计算属性
     hasModels,
@@ -357,9 +404,11 @@ export const useAiModelsStore = defineStore('aiModels', () => {
     deleteModel,
     toggleModelStatus,
     testConnection,
+    fetchEnabledModels,
     applyFilters,
     clearFilters,
     changePage,
-    changePageSize
+    changePageSize,
+    setCurrentModel
   }
 })

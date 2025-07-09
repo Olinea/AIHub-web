@@ -1,46 +1,42 @@
 <script setup lang="ts">
+import { ChevronsUpDown, Plus, Sparkles, Bot, BrainCircuit } from 'lucide-vue-next'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from '@/components/ui/sidebar'
+import { ref, onMounted, computed } from 'vue'
+import { useAiModelsStore } from '@/store/aiModels'
+import { storeToRefs } from 'pinia'
 
-  import { ChevronsUpDown, Plus, GalleryVerticalEnd, AudioWaveform, Command } from 'lucide-vue-next'
+const { isMobile } = useSidebar()
+const aiModelsStore = useAiModelsStore()
+const { models, currentModelId, loading } = storeToRefs(aiModelsStore)
+const { fetchEnabledModels, setCurrentModel } = aiModelsStore
 
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuShortcut,
-    DropdownMenuTrigger,
-  } from '@/components/ui/dropdown-menu'
+onMounted(() => {
+  fetchEnabledModels()
+})
 
-  import {
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    useSidebar,
-  } from '@/components/ui/sidebar'
-  import { ref } from 'vue'
+// 图标映射
+const modelIcon = (provider: string) => {
+  if (provider.toLowerCase().includes('openai')) return Sparkles
+  if (provider.toLowerCase().includes('deepseek')) return Bot
+  if (provider.toLowerCase().includes('google')) return BrainCircuit
+  return Sparkles
+}
 
-
-  const teams = [
-    {
-      name: 'GPT-3.5',
-      logo: GalleryVerticalEnd,
-      plan: 'Standard',
-    },
-    {
-      name: 'GPT-4',
-      logo: AudioWaveform,
-      plan: 'Advanced',
-    },
-    {
-      name: 'GPT-4o',
-      logo: Command,
-      plan: 'Latest',
-    },
-  ]
-
-  const { isMobile } = useSidebar()
-  const activeTeam = ref(teams[0])
+const activeModel = computed(() => models.value.find(m => m.id === currentModelId.value) || models.value[0])
 </script>
 
 <template>
@@ -52,13 +48,13 @@
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
             <div
               class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <component :is="activeTeam.logo" class="size-4" />
+              <component :is="modelIcon(activeModel?.provider || '')" class="size-4" />
             </div>
             <div class="grid flex-1 text-left text-sm leading-tight">
               <span class="truncate font-semibold">
-                {{ activeTeam.name }}
+                {{ activeModel?.modelName || '选择模型' }}
               </span>
-              <span class="truncate text-xs">{{ activeTeam.plan }}</span>
+              <span class="truncate text-xs">{{ activeModel?.provider }}</span>
             </div>
             <ChevronsUpDown class="ml-auto" />
           </SidebarMenuButton>
@@ -66,23 +62,27 @@
         <DropdownMenuContent class="w-[--reka-dropdown-menu-trigger-width] min-w-56 rounded-lg" align="start"
           :side="isMobile ? 'bottom' : 'right'" :side-offset="4">
           <DropdownMenuLabel class="text-xs text-muted-foreground">
-            Teams
+            可用模型
           </DropdownMenuLabel>
-          <DropdownMenuItem v-for="(team, index) in teams" :key="team.name" class="gap-2 p-2"
-            @click="activeTeam = team">
+          <DropdownMenuItem v-for="(model, index) in models" :key="model.id" class="gap-2 p-2"
+            :class="{ 'bg-accent text-accent-foreground': model.id === currentModelId }"
+            @click="setCurrentModel(model.id)">
             <div class="flex size-6 items-center justify-center rounded-sm border">
-              <component :is="team.logo" class="size-4 shrink-0" />
+              <component :is="modelIcon(model.provider)" class="size-4 shrink-0" />
             </div>
-            {{ team.name }}
+            <div class="flex flex-col min-w-0">
+              <span class="truncate">{{ model.modelName }}</span>
+              <span class="truncate text-xs text-muted-foreground">{{ model.provider }}</span>
+            </div>
             <DropdownMenuShortcut>⌘{{ index + 1 }}</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem class="gap-2 p-2">
+          <DropdownMenuItem class="gap-2 p-2" disabled>
             <div class="flex size-6 items-center justify-center rounded-md border bg-background">
               <Plus class="size-4" />
             </div>
             <div class="font-medium text-muted-foreground">
-              测试
+              新增模型（请到管理后台）
             </div>
           </DropdownMenuItem>
         </DropdownMenuContent>
