@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, onMounted } from 'vue'
+  import { computed, onMounted, ref, onUnmounted } from 'vue'
   import { useRoute } from 'vue-router'
   import { storeToRefs } from 'pinia'
   import {
@@ -15,6 +15,7 @@
   import NavMain from '@/components/NavMain.vue'
   import NavSecondary from '@/components/NavSecondary.vue'
   import NavUser from '@/components/NavUser.vue'
+  import SearchDialog from '@/components/SearchDialog.vue'
   import { useConversationsStore } from '@/store/conversations'
 
   import {
@@ -32,10 +33,34 @@
   const { activeConversations } = storeToRefs(conversationsStore)
   const { fetchConversations } = conversationsStore
 
+  // 搜索对话框状态
+  const showSearchDialog = ref(false)
+
   // 在组件挂载时获取对话列表
   onMounted(async () => {
     await fetchConversations()
+    // 添加键盘快捷键监听
+    document.addEventListener('keydown', handleKeydown)
   })
+
+  // 组件卸载时移除事件监听
+  onUnmounted(() => {
+    document.removeEventListener('keydown', handleKeydown)
+  })
+
+  // 键盘快捷键处理
+  const handleKeydown = (event: KeyboardEvent) => {
+    // Ctrl+K 或 Cmd+K 打开搜索
+    if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+      event.preventDefault()
+      showSearchDialog.value = true
+    }
+  }
+
+  // 处理搜索点击
+  const handleSearchClick = () => {
+    showSearchDialog.value = true
+  }
 
   // This is sample data.
   const data = computed(() => ({
@@ -51,6 +76,7 @@
         url: '#',
         icon: Search,
         isActive: false,
+        onClick: handleSearchClick,
       },
       {
         title: 'Ask AI Role',
@@ -106,4 +132,7 @@
 
     <SidebarRail />
   </Sidebar>
+  
+  <!-- 搜索对话框 -->
+  <SearchDialog v-model:open="showSearchDialog" />
 </template>
