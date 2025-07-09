@@ -133,7 +133,7 @@
             </div>
 
             <!-- AI正在回复的流式内容 -->
-            <div v-if="chatStore.loading && streamingMessage" class="group">
+            <div v-if="streamingMessage" class="group">
               <div class="flex items-start space-x-4 p-4 rounded-lg bg-gray-50">
                 <div class="flex-shrink-0">
                   <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white bg-green-600">
@@ -151,8 +151,7 @@
                     </div>
                   </div>
                   <div 
-                    class="prose prose-sm max-w-none prose-green typewriter-content"
-                    :class="{ 'typing': isTyping }"
+                    class="prose prose-sm max-w-none prose-green"
                     v-html="renderMarkdown(streamingMessage)"
                   ></div>
                 </div>
@@ -254,7 +253,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MessageCircle } from 'lucide-vue-next'
 import { useConversationsStore } from '@/store/conversations'
-import { useChatStore, type ChatMessage } from '@/store/chat'
+import { useChatDebugStore as useChatStore, type ChatMessage } from '@/store/chat-debug'
 import { useAiModelsStore } from '@/store/aiModels'
 import { storeToRefs } from 'pinia'
 import { marked } from 'marked'
@@ -277,8 +276,6 @@ const textareaRef = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
 const currentMessages = ref<MessageDetail[]>([])
 const streamingMessage = ref('')
-const typewriterText = ref('')
-const isTyping = ref(false)
 
 // 示例问题
 const exampleQuestions = [
@@ -377,68 +374,19 @@ function scrollToBottom() {
 }
 
 // 打字机效果
-let typewriterQueue: string[] = []
-let typewriterTimer: number | null = null
 let accumulatedContent = ''
 
 function startTypewriter(newContent: string) {
-  // 累积内容
+  // 直接累积并显示内容，不使用打字机效果
   accumulatedContent += newContent
-  
-  // 将新内容加入队列
-  typewriterQueue.push(...newContent.split(''))
-  
-  if (!isTyping.value) {
-    isTyping.value = true
-    processTypewriterQueue()
-  }
-}
-
-function processTypewriterQueue() {
-  if (typewriterQueue.length === 0) {
-    isTyping.value = false
-    return
-  }
-  
-  const char = typewriterQueue.shift()
-  if (char) {
-    typewriterText.value += char
-    streamingMessage.value = typewriterText.value
-    scrollToBottom()
-  }
-  
-  // 调整打字速度 - 根据字符类型和队列长度动态调整
-  let delay = 50
-  if (char === ' ') {
-    delay = 30
-  } else if (char === '\n') {
-    delay = 100
-  } else if (char === '.' || char === '!' || char === '?') {
-    delay = 150
-  } else if (char === ',') {
-    delay = 80
-  } else {
-    // 如果队列很长，加快速度
-    delay = typewriterQueue.length > 50 ? 20 : Math.random() * 30 + 30
-  }
-  
-  typewriterTimer = window.setTimeout(processTypewriterQueue, delay)
+  streamingMessage.value = accumulatedContent
+  console.log('Updated streaming message:', streamingMessage.value.length, 'characters')
+  scrollToBottom()
 }
 
 function stopTypewriter() {
-  if (typewriterTimer) {
-    clearTimeout(typewriterTimer)
-    typewriterTimer = null
-  }
-  
-  // 立即显示所有剩余内容
-  if (typewriterQueue.length > 0) {
-    typewriterText.value += typewriterQueue.join('')
-    streamingMessage.value = typewriterText.value
-    typewriterQueue = []
-  }
-  
-  isTyping.value = false
+  // 简化停止逻辑
+  accumulatedContent = ''
   scrollToBottom()
 }
 
@@ -504,13 +452,13 @@ async function sendMessage() {
     name: msg.name
   }))
   
-  // 重置流式消息和打字机
+  // 重置流式消息
   streamingMessage.value = ''
-  typewriterText.value = ''
   accumulatedContent = ''
   stopTypewriter()
   
   try {
+    console.log('Starting stream request...')
     // 发送流式请求
     await chatStore.sendMessageStream(
       messages,
@@ -519,21 +467,26 @@ async function sendMessage() {
         temperature: 0.7,
         max_tokens: 2000,
         onDelta: (delta: string) => {
+          console.log('Received delta:', delta)
           startTypewriter(delta)
         },
         onDone: () => {
-          // 流式完成，停止打字机效果
+          console.log('Stream completed')
+          // 流式完成，立即重新加载对话详情以获取完整的消息记录
+          if (!isNewConversation.value) {
+            fetchConversationDetail(conversationId)
+          }
+          // 清理临时状态
           setTimeout(() => {
-            stopTypewriter()
-            // 重新加载对话详情以获取完整的消息记录
-            if (!isNewConversation.value) {
-              fetchConversationDetail(conversationId)
-            }
+            console.log('Cleaning up streaming state')
             streamingMessage.value = ''
-            typewriterText.value = ''
             accumulatedContent = ''
             currentMessages.value = []
-          }, 1000) // 给打字机效果一点时间完成
+          }, 1000) // 短暂延迟让用户看到完整回复
+        },
+        onError: (error: Error) => {
+          console.error('Stream error:', error)
+          chatStore.error = error.message
         }
       }
     )
@@ -580,54 +533,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 打字机效果样式 */
-.typewriter-content {
-  position: relative;
-}
-
-.typewriter-content.typing::after {
-  content: '▊';
-  color: #10b981;
-  animation: typewriter-blink 1.2s infinite;
-  font-weight: normal;
-  margin-left: 1px;
-  display: inline-block;
-  vertical-align: baseline;
-}
-
-@keyframes typewriter-blink {
-  0%, 50% {
-    opacity: 1;
-  }
-  51%, 100% {
-    opacity: 0.3;
-  }
-}
-
-/* 打字完成后隐藏光标 */
-.typewriter-content:not(.typing)::after {
-  display: none;
-}
-
-/* 打字机文本的流畅动画 */
-.typewriter-content {
-  transition: all 0.1s ease-out;
-}
-
-/* 让AI回复区域在打字时有轻微的发光效果 */
-.typewriter-content.typing {
-  animation: subtle-glow 2s ease-in-out infinite alternate;
-}
-
-@keyframes subtle-glow {
-  from {
-    box-shadow: 0 0 5px rgba(16, 185, 129, 0.1);
-  }
-  to {
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
-  }
-}
-
 /* Markdown内容样式 */
 .markdown-content {
   line-height: 1.7;

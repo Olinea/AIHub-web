@@ -147,9 +147,10 @@ export const useChatStore = defineStore('chat', () => {
           const chunk = decoder.decode(value, { stream: true })
           // 处理每一行 data: ...
           chunk.split('\n').forEach(line => {
-            if (line.startsWith('data: ')) {
-              const json = line.slice(6)
+            if (line.startsWith('data:')) {
+              const json = line.startsWith('data: ') ? line.slice(6) : line.slice(5)
               if (json === '[DONE]') {
+                loading.value = false // 在接收到 [DONE] 时立即设置 loading 为 false
                 options?.onDone?.()
               } else {
                 try {
