@@ -46,6 +46,7 @@ const providers = [
   'OpenAI',
   'Google',
   'DeepSeek',
+  'Aliyun',
   'Other'
 ]
 
