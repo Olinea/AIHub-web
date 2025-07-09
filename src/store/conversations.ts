@@ -74,6 +74,7 @@ export const useConversationsStore = defineStore('conversations', () => {
   const conversations = ref<ConversationListItem[]>([])
   const currentConversation = ref<ConversationDetail | null>(null)
   const loading = ref(false)
+  const detailLoading = ref(false) // 专门用于跟踪对话详情加载状态
   const error = ref<string | null>(null)
   
   // 计算属性
@@ -167,7 +168,7 @@ export const useConversationsStore = defineStore('conversations', () => {
       return null
     }
 
-    loading.value = true
+    detailLoading.value = true
     error.value = null
     
     try {
@@ -195,7 +196,7 @@ export const useConversationsStore = defineStore('conversations', () => {
       console.error('获取对话详情失败:', err)
       return null
     } finally {
-      loading.value = false
+      detailLoading.value = false
     }
   }
 
@@ -396,6 +397,7 @@ export const useConversationsStore = defineStore('conversations', () => {
     conversations,
     currentConversation,
     loading,
+    detailLoading,
     error,
     
     // 计算属性

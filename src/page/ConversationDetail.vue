@@ -15,6 +15,17 @@
           <span class="px-2 py-1 bg-gray-100 rounded-full">{{ conversation.modelName }}</span>
           <span>{{ conversation.messageCount }} 条消息</span>
           <span>{{ conversation.totalTokens }} tokens</span>
+          <!-- 添加刷新按钮 -->
+          <button
+            @click="refreshConversation"
+            :disabled="detailLoading"
+            class="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 disabled:opacity-50"
+            title="刷新对话获取最新数据"
+          >
+            <svg class="w-3 h-3" :class="{ 'animate-spin': detailLoading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -39,7 +50,7 @@
       @scroll="handleScroll"
     >
       <!-- 加载状态 -->
-      <div v-if="loading && !conversation && !isNewConversation" class="p-6">
+      <div v-if="detailLoading || (loading && !isNewConversation)" class="p-6">
         <div class="space-y-6 max-w-4xl mx-auto">
           <div v-for="i in 3" :key="i" class="animate-pulse">
             <div class="flex space-x-4 p-6">
@@ -57,7 +68,7 @@
       </div>
 
       <!-- 消息列表 -->
-      <div v-else-if="conversation?.messages?.length || currentMessages.length" class="py-6">
+      <div v-else-if="!detailLoading && (conversation?.messages?.length || currentMessages.length)" class="py-6">
         <div class="max-w-4xl mx-auto px-6">
           <div class="space-y-6">
             <!-- 历史消息 -->
@@ -162,7 +173,7 @@
       </div>
 
       <!-- 空状态 - 新对话 -->
-      <div v-else class="flex flex-col items-center justify-center h-full text-gray-500">
+      <div v-else-if="!detailLoading" class="flex flex-col items-center justify-center h-full text-gray-500">
         <div class="text-center max-w-md">
           <MessageCircle class="w-16 h-16 mb-4 text-gray-300 mx-auto" />
           <h3 class="text-lg font-medium text-gray-900 mb-2">开始新对话</h3>
@@ -267,7 +278,7 @@ const chatStore = useChatStore()
 const aiModelsStore = useAiModelsStore()
 
 // 响应式数据
-const { currentConversation: conversation, loading, error } = storeToRefs(conversationsStore)
+const { currentConversation: conversation, loading, detailLoading, error } = storeToRefs(conversationsStore)
 const { fetchConversationDetail, clearError, createConversation } = conversationsStore
 
 // 界面状态
@@ -390,6 +401,21 @@ function stopTypewriter() {
   scrollToBottom()
 }
 
+// 手动刷新对话
+async function refreshConversation() {
+  if (!isNewConversation.value) {
+    const conversationId = parseInt(route.params.id as string, 10)
+    if (!isNaN(conversationId)) {
+      // 清理临时消息状态
+      currentMessages.value = []
+      streamingMessage.value = ''
+      accumulatedContent = ''
+      // 重新获取对话详情
+      await fetchConversationDetail(conversationId)
+    }
+  }
+}
+
 // 处理滚动事件
 function handleScroll() {
   // 可以在这里处理滚动相关逻辑，比如检测是否滚动到顶部加载更多消息
@@ -410,6 +436,7 @@ async function sendMessage() {
   
   // 如果是新对话，先创建对话
   let conversationId: number
+  
   if (isNewConversation.value) {
     const newId = await createConversation('新对话')
     if (!newId) {
@@ -417,7 +444,7 @@ async function sendMessage() {
       return
     }
     conversationId = newId
-    // 跳转到新创建的对话
+    // 立即跳转到新创建的对话页面
     router.push(`/conversation/${newId}`)
   } else {
     conversationId = parseInt(route.params.id as string, 10)
@@ -472,17 +499,37 @@ async function sendMessage() {
         },
         onDone: () => {
           console.log('Stream completed')
-          // 流式完成，立即重新加载对话详情以获取完整的消息记录
-          if (!isNewConversation.value) {
-            fetchConversationDetail(conversationId)
+          
+          // 将流式消息转换为正式消息，避免立即重新获取对话详情
+          if (streamingMessage.value) {
+            const assistantMessage: MessageDetail = {
+              id: Date.now() + 1, // 临时ID，确保与用户消息ID不同
+              role: 'assistant',
+              content: streamingMessage.value,
+              name: null,
+              modelId: aiModelsStore.currentModelId!,
+              modelName: aiModelsStore.currentModel?.modelName || '',
+              tokensConsumed: 0,
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+              finishReason: 'stop',
+              toolCalls: null,
+              toolCallId: null,
+              systemFingerprint: '',
+              createdAt: new Date().toISOString()
+            }
+            
+            currentMessages.value.push(assistantMessage)
           }
-          // 清理临时状态
-          setTimeout(() => {
-            console.log('Cleaning up streaming state')
-            streamingMessage.value = ''
-            accumulatedContent = ''
-            currentMessages.value = []
-          }, 1000) // 短暂延迟让用户看到完整回复
+          
+          // 清理流式状态
+          streamingMessage.value = ''
+          accumulatedContent = ''
+          
+          // 不立即重新获取对话详情，避免显示旧数据
+          // 让前端状态保持，用户可以继续对话或手动刷新
+          console.log('保持当前消息状态，避免立即刷新导致数据丢失')
         },
         onError: (error: Error) => {
           console.error('Stream error:', error)
@@ -501,6 +548,8 @@ async function loadConversation() {
     // 清空当前对话和消息
     conversationsStore.clearCurrentConversation()
     currentMessages.value = []
+    // 确保新对话时没有加载状态
+    conversationsStore.detailLoading = false
     return
   }
   
@@ -509,14 +558,24 @@ async function loadConversation() {
     const id = parseInt(conversationId, 10)
     if (!isNaN(id)) {
       await fetchConversationDetail(id)
-      currentMessages.value = []
+      // 只有在没有流式消息进行时才清理临时消息
+      if (!streamingMessage.value) {
+        currentMessages.value = []
+      }
     }
   }
 }
 
 // 监听路由变化
-watch(() => route.params.id, () => {
+watch(() => route.params.id, (newId, oldId) => {
   if (route.name === 'ConversationDetail') {
+    // 如果从新对话跳转到具体对话，保持当前的流式状态和临时消息
+    const isFromNewToExisting = oldId === 'new' && newId !== 'new'
+    if (isFromNewToExisting) {
+      // 不清理当前状态，保持流式消息和临时消息显示
+      console.log('从新对话跳转到具体对话，保持当前状态')
+      return
+    }
     loadConversation()
   }
 }, { immediate: true })
