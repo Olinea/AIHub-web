@@ -1,9 +1,58 @@
 <script setup lang="ts">
+import { MessageCircle, Sparkles, Settings } from 'lucide-vue-next'
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col gap-4 px-4 py-10">
-    <div class="mx-auto h-24 w-full max-w-3xl rounded-xl bg-muted/50" />
-    <div class="mx-auto h-full w-full max-w-3xl rounded-xl bg-muted/50" />
+  <div class="flex flex-col h-full">
+    <!-- 欢迎区域 -->
+    <div class="flex-1 flex flex-col items-center justify-center px-4 py-8">
+      <div class="text-center max-w-2xl">
+        <div class="mb-8">
+          <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Sparkles class="w-8 h-8 text-white" />
+          </div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            欢迎使用 AI 聊天助手
+          </h1>
+          <p class="text-lg text-gray-600">
+            选择左侧的对话开始聊天，或创建新的对话
+          </p>
+        </div>
+
+        <!-- 功能卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div class="p-6 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+            <MessageCircle class="w-8 h-8 text-blue-500 mb-3" />
+            <h3 class="font-semibold text-gray-900 mb-2">智能对话</h3>
+            <p class="text-sm text-gray-600">与AI进行自然流畅的对话交流</p>
+          </div>
+          
+          <div class="p-6 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+            <Sparkles class="w-8 h-8 text-green-500 mb-3" />
+            <h3 class="font-semibold text-gray-900 mb-2">多模型支持</h3>
+            <p class="text-sm text-gray-600">支持多种AI模型，满足不同需求</p>
+          </div>
+          
+          <div class="p-6 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+            <Settings class="w-8 h-8 text-purple-500 mb-3" />
+            <h3 class="font-semibold text-gray-900 mb-2">个性化设置</h3>
+            <p class="text-sm text-gray-600">自定义AI参数和聊天偏好</p>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <button class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            开始新对话
+          </button>
+          <router-link 
+            to="/settings" 
+            class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-center"
+          >
+            查看设置
+          </router-link>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

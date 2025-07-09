@@ -45,13 +45,7 @@ const testingConnection = ref(false)
 const providers = [
   'OpenAI',
   'Google',
-  'Anthropic',
-  'Microsoft',
-  'Meta',
-  'Alibaba',
-  'Baidu',
-  'Tencent',
-  'ByteDance',
+  'DeepSeek',
   'Other'
 ]
 
@@ -183,7 +177,7 @@ async function testConnection() {
     
     if (result) {
       toast('API连接测试', {
-        description: JSON.stringify(result) ?? '连接成功',
+        description: result
       })
     } else {
       toast('测试失败', {

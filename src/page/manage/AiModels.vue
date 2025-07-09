@@ -41,6 +41,7 @@ const filters = ref({
 const providers = [
   'OpenAI',
   'Google',
+  'DeepSeek',
   'Anthropic',
   'Microsoft',
   'Meta',

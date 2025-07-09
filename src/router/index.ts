@@ -6,6 +6,7 @@ import Templates from '@/page/Templates.vue'
 import Help from '@/page/Help.vue'
 import NotFound from '@/page/NotFound.vue'
 import Login from '@/page/Login.vue'
+import ConversationDetail from '@/page/ConversationDetail.vue'
 
 // 管理页面组件
 import ManageIndex from '@/page/manage/Index.vue'
@@ -40,6 +41,12 @@ const routes = [
     path: '/help',
     name: 'Help',
     component: Help,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/conversation/:id',
+    name: 'ConversationDetail',
+    component: ConversationDetail,
     meta: { requiresAuth: true }
   },
   {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, onMounted } from 'vue'
   import { useRoute } from 'vue-router'
+  import { storeToRefs } from 'pinia'
   import {
     Blocks,
     Home,
@@ -14,7 +15,7 @@
   import NavMain from '@/components/NavMain.vue'
   import NavSecondary from '@/components/NavSecondary.vue'
   import NavUser from '@/components/NavUser.vue'
-
+  import { useConversationsStore } from '@/store/conversations'
 
   import {
     Sidebar,
@@ -27,6 +28,14 @@
 
   const props = defineProps<SidebarProps>()
   const route = useRoute()
+  const conversationsStore = useConversationsStore()
+  const { activeConversations } = storeToRefs(conversationsStore)
+  const { fetchConversations } = conversationsStore
+
+  // 在组件挂载时获取对话列表
+  onMounted(async () => {
+    await fetchConversations()
+  })
 
   // This is sample data.
   const data = computed(() => ({
@@ -70,12 +79,15 @@
         isActive: route.path === '/help',
       },
     ],
-    chat: [
-      {
-        name: '对话的标题,这个应该是从api获取的',
-        url: '#',
-      },
-    ]
+    // 使用真实的对话数据
+    chat: activeConversations.value.map(conversation => ({
+      name: conversation.title,
+      url: `/conversation/${conversation.id}`,
+      id: conversation.id,
+      isActive: route.path === `/conversation/${conversation.id}`,
+      lastMessageTime: conversation.lastMessageTime,
+      messageCount: conversation.messageCount
+    }))
   }))
 </script>
 
