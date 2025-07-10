@@ -1,395 +1,493 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { useAuthStore } from './auth'
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import { useAuthStore } from "./auth";
 
 // 对话列表项接口
 export interface ConversationListItem {
-  id: number
-  title: string
-  status: 'active' | 'archived' | 'deleted'
-  modelId: number
-  modelName: string
-  messageCount: number
-  totalTokens: number
-  lastMessageContent: string
-  lastMessageTime: string
-  createdAt: string
-  updatedAt: string
+  id: number;
+  title: string;
+  status: "active" | "archived" | "deleted";
+  modelId: number;
+  modelName: string;
+  messageCount: number;
+  totalTokens: number;
+  lastMessageContent: string;
+  lastMessageTime: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // 消息详情接口
 export interface MessageDetail {
-  id: number
-  role: 'system' | 'user' | 'assistant' | 'tool' | 'function'
-  content: string
-  name: string | null
-  modelId: number
-  modelName: string
-  tokensConsumed: number
-  promptTokens: number
-  completionTokens: number
-  totalTokens: number
-  finishReason: string
-  toolCalls: string | null
-  toolCallId: string | null
-  systemFingerprint: string
-  createdAt: string
+  id: number;
+  role: "system" | "user" | "assistant" | "tool" | "function";
+  content: string;
+  name: string | null;
+  modelId: number;
+  modelName: string;
+  tokensConsumed: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  finishReason: string;
+  toolCalls: string | null;
+  toolCallId: string | null;
+  systemFingerprint: string;
+  createdAt: string;
 }
 
 // 对话详情接口
 export interface ConversationDetail {
-  id: number
-  title: string
-  status: 'active' | 'archived' | 'deleted'
-  modelId: number
-  modelName: string
-  messageCount: number
-  totalTokens: number
-  createdAt: string
-  updatedAt: string
-  messages: MessageDetail[]
+  id: number;
+  title: string;
+  status: "active" | "archived" | "deleted";
+  modelId: number;
+  modelName: string;
+  messageCount: number;
+  totalTokens: number;
+  createdAt: string;
+  updatedAt: string;
+  messages: MessageDetail[];
 }
 
 // API响应格式
 interface ApiResponse<T> {
-  code: number
-  message: string
-  data: T
-  timestamp: number
+  code: number;
+  message: string;
+  data: T;
+  timestamp: number;
 }
 
 // 分页响应格式
 interface PageResponse<T> {
-  current: number
-  size: number
-  total: number
-  pages: number
-  records: T[]
+  current: number;
+  size: number;
+  total: number;
+  pages: number;
+  records: T[];
 }
 
-export const useConversationsStore = defineStore('conversations', () => {
-  const authStore = useAuthStore()
-  
+export const useConversationsStore = defineStore("conversations", () => {
+  const authStore = useAuthStore();
+
   // 状态
-  const conversations = ref<ConversationListItem[]>([])
-  const currentConversation = ref<ConversationDetail | null>(null)
-  const loading = ref(false)
-  const detailLoading = ref(false) // 专门用于跟踪对话详情加载状态
-  const error = ref<string | null>(null)
-  
+  const conversations = ref<ConversationListItem[]>([]);
+  const currentConversation = ref<ConversationDetail | null>(null);
+  const loading = ref(false);
+  const detailLoading = ref(false); // 专门用于跟踪对话详情加载状态
+  const error = ref<string | null>(null);
+
   // 计算属性
-  const activeConversations = computed(() => 
-    conversations.value.filter(conv => conv.status === 'active')
-  )
-  
-  const archivedConversations = computed(() => 
-    conversations.value.filter(conv => conv.status === 'archived')
-  )
+  const activeConversations = computed(() =>
+    conversations.value.filter((conv) => conv.status === "active")
+  );
+
+  const archivedConversations = computed(() =>
+    conversations.value.filter((conv) => conv.status === "archived")
+  );
 
   // 获取对话列表
   async function fetchConversations() {
     if (!authStore.token) {
-      error.value = '未授权'
-      return
+      error.value = "未授权";
+      return;
     }
 
-    loading.value = true
-    error.value = null
-    
+    loading.value = true;
+    error.value = null;
+
     try {
-      const response = await fetch('/api/v1/conversations', {
+      const response = await fetch("/api/v1/conversations", {
         headers: {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+          Authorization: `Bearer ${authStore.token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result: ApiResponse<ConversationListItem[]> = await response.json()
-      
+      const result: ApiResponse<ConversationListItem[]> = await response.json();
+
       if (result.code === 200) {
-        conversations.value = result.data
+        conversations.value = result.data;
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : '获取对话列表失败'
-      console.error('获取对话列表失败:', err)
+      error.value = err instanceof Error ? err.message : "获取对话列表失败";
+      console.error("获取对话列表失败:", err);
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   // 分页获取对话列表
   async function fetchConversationsWithPagination(current = 1, size = 20) {
     if (!authStore.token) {
-      error.value = '未授权'
-      return null
+      error.value = "未授权";
+      return null;
     }
 
-    loading.value = true
-    error.value = null
-    
+    loading.value = true;
+    error.value = null;
+
     try {
-      const response = await fetch(`/api/v1/conversations/page?current=${current}&size=${size}`, {
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `/api/v1/conversations/page?current=${current}&size=${size}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authStore.token}`,
+            "Content-Type": "application/json",
+          },
         }
-      })
+      );
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result: ApiResponse<PageResponse<ConversationListItem>> = await response.json()
-      
+      const result: ApiResponse<PageResponse<ConversationListItem>> =
+        await response.json();
+
       if (result.code === 200) {
-        return result.data
+        return result.data;
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : '获取对话列表失败'
-      console.error('获取对话列表失败:', err)
-      return null
+      error.value = err instanceof Error ? err.message : "获取对话列表失败";
+      console.error("获取对话列表失败:", err);
+      return null;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   // 获取对话详情
   async function fetchConversationDetail(conversationId: number) {
     if (!authStore.token) {
-      error.value = '未授权'
-      return null
+      error.value = "未授权";
+      return null;
     }
 
-    detailLoading.value = true
-    error.value = null
-    
+    detailLoading.value = true;
+    error.value = null;
+
     try {
       const response = await fetch(`/api/v1/conversations/${conversationId}`, {
         headers: {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+          Authorization: `Bearer ${authStore.token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result: ApiResponse<ConversationDetail> = await response.json()
-      
+      const result: ApiResponse<ConversationDetail> = await response.json();
+
       if (result.code === 200) {
-        currentConversation.value = result.data
-        return result.data
+        currentConversation.value = result.data;
+        return result.data;
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : '获取对话详情失败'
-      console.error('获取对话详情失败:', err)
-      return null
+      error.value = err instanceof Error ? err.message : "获取对话详情失败";
+      console.error("获取对话详情失败:", err);
+      return null;
     } finally {
-      detailLoading.value = false
+      detailLoading.value = false;
     }
   }
 
   // 更新对话标题
-  async function updateConversationTitle(conversationId: number, title: string) {
+  async function updateConversationTitle(
+    conversationId: number,
+    title: string
+  ) {
     if (!authStore.token) {
-      error.value = '未授权'
-      return false
+      error.value = "未授权";
+      return false;
     }
 
-    loading.value = true
-    error.value = null
-    
+    loading.value = true;
+    error.value = null;
+
     try {
-      const response = await fetch(`/api/v1/conversations/${conversationId}/title`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ title })
-      })
+      const response = await fetch(
+        `/api/v1/conversations/${conversationId}/title`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${authStore.token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ title }),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result: ApiResponse<null> = await response.json()
-      
+      const result: ApiResponse<null> = await response.json();
+
       if (result.code === 200) {
         // 更新本地状态
-        const conversation = conversations.value.find(conv => conv.id === conversationId)
+        const conversation = conversations.value.find(
+          (conv) => conv.id === conversationId
+        );
         if (conversation) {
-          conversation.title = title
+          conversation.title = title;
         }
-        if (currentConversation.value && currentConversation.value.id === conversationId) {
-          currentConversation.value.title = title
+        if (
+          currentConversation.value &&
+          currentConversation.value.id === conversationId
+        ) {
+          currentConversation.value.title = title;
         }
-        return true
+        return true;
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : '更新对话标题失败'
-      console.error('更新对话标题失败:', err)
-      return false
+      error.value = err instanceof Error ? err.message : "更新对话标题失败";
+      console.error("更新对话标题失败:", err);
+      return false;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   // 归档对话
   async function archiveConversation(conversationId: number) {
     if (!authStore.token) {
-      error.value = '未授权'
-      return false
+      error.value = "未授权";
+      return false;
     }
 
-    loading.value = true
-    error.value = null
-    
+    loading.value = true;
+    error.value = null;
+
     try {
-      const response = await fetch(`/api/v1/conversations/${conversationId}/archive`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `/api/v1/conversations/${conversationId}/archive`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${authStore.token}`,
+            "Content-Type": "application/json",
+          },
         }
-      })
+      );
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result: ApiResponse<null> = await response.json()
-      
+      const result: ApiResponse<null> = await response.json();
+
       if (result.code === 200) {
         // 更新本地状态
-        const conversation = conversations.value.find(conv => conv.id === conversationId)
+        const conversation = conversations.value.find(
+          (conv) => conv.id === conversationId
+        );
         if (conversation) {
-          conversation.status = 'archived'
+          conversation.status = "archived";
         }
-        return true
+        return true;
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : '归档对话失败'
-      console.error('归档对话失败:', err)
-      return false
+      error.value = err instanceof Error ? err.message : "归档对话失败";
+      console.error("归档对话失败:", err);
+      return false;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   // 删除对话
   async function deleteConversation(conversationId: number) {
     if (!authStore.token) {
-      error.value = '未授权'
-      return false
+      error.value = "未授权";
+      return false;
     }
 
-    loading.value = true
-    error.value = null
-    
+    loading.value = true;
+    error.value = null;
+
     try {
       const response = await fetch(`/api/v1/conversations/${conversationId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Content-Type': 'application/json'
-        }
-      })
+          Authorization: `Bearer ${authStore.token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result: ApiResponse<null> = await response.json()
-      
+      const result: ApiResponse<null> = await response.json();
+
       if (result.code === 200) {
         // 从本地状态中移除
-        const index = conversations.value.findIndex(conv => conv.id === conversationId)
+        const index = conversations.value.findIndex(
+          (conv) => conv.id === conversationId
+        );
         if (index > -1) {
-          conversations.value.splice(index, 1)
+          conversations.value.splice(index, 1);
         }
         // 如果当前查看的对话被删除，清空当前对话
-        if (currentConversation.value && currentConversation.value.id === conversationId) {
-          currentConversation.value = null
+        if (
+          currentConversation.value &&
+          currentConversation.value.id === conversationId
+        ) {
+          currentConversation.value = null;
         }
-        return true
+        return true;
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : '删除对话失败'
-      console.error('删除对话失败:', err)
-      return false
+      error.value = err instanceof Error ? err.message : "删除对话失败";
+      console.error("删除对话失败:", err);
+      return false;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
   // 创建新对话
   async function createConversation(title?: string) {
     if (!authStore.token) {
-      error.value = '未授权'
-      return null
+      error.value = "未授权";
+      return null;
     }
 
-    loading.value = true
-    error.value = null
-    
+    loading.value = true;
+    error.value = null;
+
     try {
-      const response = await fetch('/api/v1/conversations/new', {
-        method: 'POST',
+      const response = await fetch("/api/v1/conversations/new", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${authStore.token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${authStore.token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ title: title || '新对话' })
-      })
+        body: JSON.stringify({ title: title || "新对话" }),
+      });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result: ApiResponse<number> = await response.json()
-      
+      const result: ApiResponse<number> = await response.json();
+
       if (result.code === 200) {
         // 刷新对话列表
-        await fetchConversations()
-        return result.data
+        await fetchConversations();
+        return result.data;
       } else {
-        throw new Error(result.message)
+        throw new Error(result.message);
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : '创建对话失败'
-      console.error('创建对话失败:', err)
-      return null
+      error.value = err instanceof Error ? err.message : "创建对话失败";
+      console.error("创建对话失败:", err);
+      return null;
     } finally {
-      loading.value = false
+      loading.value = false;
+    }
+  }
+
+  // 生成对话总汇标题
+  async function generateConversationSummaryTitle(conversationId: number) {
+    if (!authStore.token) {
+      error.value = "未授权";
+      return null;
+    }
+
+    if (
+      !currentConversation.value ||
+      currentConversation.value.id !== conversationId
+    ) {
+      error.value = "对话不存在或未加载";
+      return null;
+    }
+
+    loading.value = true;
+    error.value = null;
+
+    try {
+      // 准备消息数据，转换为API需要的格式
+      const messages = currentConversation.value.messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      const response = await fetch("/api/v1/chat/generate-summary-title", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authStore.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          conversationId,
+          messages,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result: ApiResponse<{
+        title: string;
+        conversationId: number;
+        timestamp: number;
+      }> = await response.json();
+
+      if (result.code === 200) {
+        const generatedTitle = result.data.title;
+
+        // 自动更新对话标题
+        const updateSuccess = await updateConversationTitle(
+          conversationId,
+          generatedTitle
+        );
+
+        if (updateSuccess) {
+          return generatedTitle;
+        } else {
+          throw new Error("生成标题成功但更新失败");
+        }
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : "生成对话标题失败";
+      console.error("生成对话标题失败:", err);
+      return null;
+    } finally {
+      loading.value = false;
     }
   }
 
   // 清空错误
   function clearError() {
-    error.value = null
+    error.value = null;
   }
 
   // 清空当前对话
   function clearCurrentConversation() {
-    currentConversation.value = null
+    currentConversation.value = null;
   }
 
   return {
@@ -399,11 +497,11 @@ export const useConversationsStore = defineStore('conversations', () => {
     loading,
     detailLoading,
     error,
-    
+
     // 计算属性
     activeConversations,
     archivedConversations,
-    
+
     // 方法
     fetchConversations,
     fetchConversationsWithPagination,
@@ -413,6 +511,7 @@ export const useConversationsStore = defineStore('conversations', () => {
     archiveConversation,
     deleteConversation,
     clearError,
-    clearCurrentConversation
-  }
-})
+    clearCurrentConversation,
+    generateConversationSummaryTitle,
+  };
+});

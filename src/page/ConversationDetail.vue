@@ -121,6 +121,21 @@
                       'prose-green': message.role === 'assistant'
                     }"
                   >
+                    <!-- 显示思考内容（如果存在） -->
+                    <div v-if="message.role === 'assistant' && message.reasoningContent" class="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <details>
+                        <summary class="cursor-pointer text-yellow-700 text-sm font-medium mb-2 flex items-center space-x-2">
+                          <span>🤔 AI思考过程</span>
+                          <span class="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded">已保存</span>
+                        </summary>
+                        <div 
+                          class="prose prose-sm max-w-none text-yellow-700 mt-2"
+                          v-html="renderMarkdown(message.reasoningContent)"
+                        ></div>
+                      </details>
+                    </div>
+                    
+                    <!-- 正式回答内容 -->
                     <div 
                       v-if="message.role === 'assistant'"
                       v-html="renderMarkdown(message.content)"
@@ -144,7 +159,7 @@
             </div>
 
             <!-- AI正在回复的流式内容 -->
-            <div v-if="streamingMessage" class="group">
+            <div v-if="streamingMessage || streamingReasoning || isAiResponding" class="group">
               <div class="flex items-start space-x-4 p-4 rounded-lg bg-gray-50">
                 <div class="flex-shrink-0">
                   <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium text-white bg-green-600">
@@ -154,17 +169,42 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center space-x-2 mb-2">
                     <span class="text-sm font-medium text-gray-900">AI助手</span>
-                    <span class="text-xs text-gray-500">正在回复...</span>
+                    <span class="text-xs text-gray-500">
+                      {{ streamingReasoning ? '正在思考...' : streamingMessage ? '正在回复...' : '正在准备...' }}
+                    </span>
                     <div class="flex space-x-1">
                       <div class="w-1 h-1 bg-green-500 rounded-full animate-bounce"></div>
                       <div class="w-1 h-1 bg-green-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
                       <div class="w-1 h-1 bg-green-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
                     </div>
                   </div>
-                  <div 
-                    class="prose prose-sm max-w-none prose-green"
-                    v-html="renderMarkdown(streamingMessage)"
-                  ></div>
+                  
+                  <!-- 思考内容 -->
+                  <div v-if="streamingReasoning" class="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <details :open="streamingReasoning.length > 0">
+                      <summary class="cursor-pointer text-yellow-700 text-sm font-medium mb-2">
+                        <span class="inline-flex items-center space-x-2">
+                          <span>🤔 AI思考过程</span>
+                          <span class="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded">实时</span>
+                          <div class="flex space-x-1">
+                            <div class="w-1 h-1 bg-yellow-500 rounded-full animate-pulse"></div>
+                            <div class="w-1 h-1 bg-yellow-500 rounded-full animate-pulse" style="animation-delay: 0.1s"></div>
+                            <div class="w-1 h-1 bg-yellow-500 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                          </div>
+                        </span>
+                      </summary>
+                      <div 
+                        class="prose prose-sm max-w-none text-yellow-700 mt-2"
+                        v-html="renderMarkdown(streamingReasoning)"
+                      ></div>
+                    </details>
+                  </div>
+                  
+                  <!-- 正式回答内容 -->
+                  <div v-if="streamingMessage || (!streamingReasoning && !streamingMessage && isAiResponding)" class="prose prose-sm max-w-none prose-green">
+                    <div v-if="streamingMessage" v-html="renderMarkdown(streamingMessage)"></div>
+                    <div v-else-if="isAiResponding" class="text-gray-500 italic">准备回复中...</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -270,6 +310,11 @@ import { storeToRefs } from 'pinia'
 import { marked } from 'marked'
 import type { MessageDetail } from '@/store/conversations'
 
+// 扩展MessageDetail以支持本地思考内容
+interface MessageDetailWithReasoning extends MessageDetail {
+  reasoningContent?: string // 本地保存的思考内容
+}
+
 // 路由和store
 const route = useRoute()
 const router = useRouter()
@@ -285,8 +330,10 @@ const { fetchConversationDetail, clearError, createConversation } = conversation
 const inputText = ref('')
 const textareaRef = ref<HTMLTextAreaElement>()
 const messagesContainer = ref<HTMLDivElement>()
-const currentMessages = ref<MessageDetail[]>([])
+const currentMessages = ref<MessageDetailWithReasoning[]>([])
 const streamingMessage = ref('')
+const streamingReasoning = ref('')
+const isAiResponding = ref(false)
 
 // 示例问题
 const exampleQuestions = [
@@ -303,7 +350,12 @@ const isNewConversation = computed(() => {
 
 const displayMessages = computed(() => {
   if (conversation.value) {
-    return [...conversation.value.messages, ...currentMessages.value]
+    // 将conversation中的消息转换为带有思考内容的格式
+    const conversationMessages: MessageDetailWithReasoning[] = conversation.value.messages.map(msg => ({
+      ...msg,
+      reasoningContent: undefined // 历史消息暂时没有思考内容
+    }))
+    return [...conversationMessages, ...currentMessages.value]
   }
   return currentMessages.value
 })
@@ -386,18 +438,20 @@ function scrollToBottom() {
 
 // 打字机效果
 let accumulatedContent = ''
+let accumulatedReasoning = ''
 
-function startTypewriter(newContent: string) {
-  // 直接累积并显示内容，不使用打字机效果
-  accumulatedContent += newContent
-  streamingMessage.value = accumulatedContent
-  console.log('Updated streaming message:', streamingMessage.value.length, 'characters')
-  scrollToBottom()
-}
-
-function stopTypewriter() {
-  // 简化停止逻辑
-  accumulatedContent = ''
+function startTypewriter(newContent: string, isReasoning = false) {
+  if (isReasoning) {
+    // 处理思考内容
+    accumulatedReasoning += newContent
+    streamingReasoning.value = accumulatedReasoning
+    console.log('Updated reasoning content:', streamingReasoning.value.length, 'characters')
+  } else {
+    // 处理正式回答内容
+    accumulatedContent += newContent
+    streamingMessage.value = accumulatedContent
+    console.log('Updated streaming message:', streamingMessage.value.length, 'characters')
+  }
   scrollToBottom()
 }
 
@@ -409,7 +463,10 @@ async function refreshConversation() {
       // 清理临时消息状态
       currentMessages.value = []
       streamingMessage.value = ''
+      streamingReasoning.value = ''
       accumulatedContent = ''
+      accumulatedReasoning = ''
+      isAiResponding.value = false
       // 重新获取对话详情
       await fetchConversationDetail(conversationId)
     }
@@ -451,7 +508,7 @@ async function sendMessage() {
   }
   
   // 添加用户消息到临时列表
-  const userMessage: MessageDetail = {
+  const userMessage: MessageDetailWithReasoning = {
     id: Date.now(), // 临时ID
     role: 'user',
     content: messageContent,
@@ -472,6 +529,9 @@ async function sendMessage() {
   currentMessages.value.push(userMessage)
   scrollToBottom()
   
+  // 立即显示AI正在工作的状态
+  isAiResponding.value = true
+  
   // 构建消息历史
   const messages: ChatMessage[] = displayMessages.value.map(msg => ({
     role: msg.role,
@@ -481,8 +541,9 @@ async function sendMessage() {
   
   // 重置流式消息
   streamingMessage.value = ''
+  streamingReasoning.value = ''
   accumulatedContent = ''
-  stopTypewriter()
+  accumulatedReasoning = ''
   
   try {
     console.log('Starting stream request...')
@@ -493,19 +554,20 @@ async function sendMessage() {
       {
         temperature: 0.7,
         max_tokens: 2000,
-        onDelta: (delta: string) => {
-          console.log('Received delta:', delta)
-          startTypewriter(delta)
+        onDelta: (delta: string, isReasoning: boolean = false) => {
+          console.log('Received delta:', delta, 'isReasoning:', isReasoning)
+          startTypewriter(delta, isReasoning)
         },
         onDone: () => {
           console.log('Stream completed')
           
-          // 将流式消息转换为正式消息，避免立即重新获取对话详情
-          if (streamingMessage.value) {
-            const assistantMessage: MessageDetail = {
+          // 将流式消息转换为正式消息，保留思考内容
+          if (streamingMessage.value || streamingReasoning.value) {
+            const assistantMessage: MessageDetailWithReasoning = {
               id: Date.now() + 1, // 临时ID，确保与用户消息ID不同
               role: 'assistant',
               content: streamingMessage.value,
+              reasoningContent: streamingReasoning.value || undefined, // 保存思考内容
               name: null,
               modelId: aiModelsStore.currentModelId!,
               modelName: aiModelsStore.currentModel?.modelName || '',
@@ -523,17 +585,24 @@ async function sendMessage() {
             currentMessages.value.push(assistantMessage)
           }
           
-          // 清理流式状态
+          // 清理流式状态，但不清理思考内容（已保存到消息中）
           streamingMessage.value = ''
+          streamingReasoning.value = ''
           accumulatedContent = ''
+          accumulatedReasoning = ''
+          isAiResponding.value = false
           
           // 不立即重新获取对话详情，避免显示旧数据
           // 让前端状态保持，用户可以继续对话或手动刷新
-          console.log('保持当前消息状态，避免立即刷新导致数据丢失')
+          console.log('保持当前消息状态，思考内容已保存到本地消息中')
         },
         onError: (error: Error) => {
           console.error('Stream error:', error)
           chatStore.error = error.message
+          // 出错时也要清理状态
+          isAiResponding.value = false
+          streamingMessage.value = ''
+          streamingReasoning.value = ''
         }
       }
     )
@@ -548,6 +617,9 @@ async function loadConversation() {
     // 清空当前对话和消息
     conversationsStore.clearCurrentConversation()
     currentMessages.value = []
+    streamingMessage.value = ''
+    streamingReasoning.value = ''
+    isAiResponding.value = false
     // 确保新对话时没有加载状态
     conversationsStore.detailLoading = false
     return
@@ -559,7 +631,7 @@ async function loadConversation() {
     if (!isNaN(id)) {
       await fetchConversationDetail(id)
       // 只有在没有流式消息进行时才清理临时消息
-      if (!streamingMessage.value) {
+      if (!streamingMessage.value && !streamingReasoning.value && !isAiResponding.value) {
         currentMessages.value = []
       }
     }

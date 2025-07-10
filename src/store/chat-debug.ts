@@ -37,7 +37,7 @@ export const useChatDebugStore = defineStore('chat-debug', () => {
     frequency_penalty?: number
     presence_penalty?: number
     stop?: string[]
-    onDelta?: (delta: string) => void
+    onDelta?: (delta: string, isReasoning?: boolean) => void
     onDone?: () => void
     onError?: (error: Error) => void
   }) {
@@ -130,13 +130,26 @@ export const useChatDebugStore = defineStore('chat-debug', () => {
                 const parsed = JSON.parse(data)
                 console.log('Parsed data:', parsed)
                 
-                const delta = parsed.choices?.[0]?.delta?.content || ''
-                if (delta) {
-                  console.log('Delta content:', JSON.stringify(delta))
-                  streamContent.value += delta
-                  options?.onDelta?.(delta)
+                const choice = parsed.choices?.[0]
+                if (choice) {
+                  const delta = choice.delta
+                  
+                  // 处理思考内容 (reasoning_content)
+                  const reasoningContent = delta?.reasoning_content || ''
+                  if (reasoningContent) {
+                    console.log('Reasoning content:', JSON.stringify(reasoningContent))
+                    options?.onDelta?.(reasoningContent, true) // true表示这是思考内容
+                  }
+                  
+                  // 处理正式回答内容 (content)
+                  const responseContent = delta?.content || ''
+                  if (responseContent) {
+                    console.log('Response content:', JSON.stringify(responseContent))
+                    streamContent.value += responseContent
+                    options?.onDelta?.(responseContent, false) // false表示这是正式回答
+                  }
                 } else {
-                  console.log('No delta content in parsed data')
+                  console.log('No choices in parsed data')
                 }
               } catch (err) {
                 console.error('Error parsing JSON:', err, 'Data was:', data)
