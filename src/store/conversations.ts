@@ -207,17 +207,23 @@ export const useConversationsStore = defineStore("conversations", () => {
   // 更新对话标题
   async function updateConversationTitle(
     conversationId: number,
-    title: string
+    title: string,
+    skipLoadingState = false // 新增参数，允许跳过loading状态设置
   ) {
     if (!authStore.token) {
       error.value = "未授权";
       return false;
     }
 
-    loading.value = true;
+    if (!skipLoadingState) {
+      loading.value = true;
+    }
     error.value = null;
 
     try {
+      console.log(`PUT request to: /api/v1/conversations/${conversationId}/title`);
+      console.log(`PUT request body:`, JSON.stringify({ title }));
+      
       const response = await fetch(
         `/api/v1/conversations/${conversationId}/title`,
         {
@@ -230,11 +236,15 @@ export const useConversationsStore = defineStore("conversations", () => {
         }
       );
 
+      console.log(`PUT response status: ${response.status}`);
+      console.log(`PUT response ok: ${response.ok}`);
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result: ApiResponse<null> = await response.json();
+      console.log(`PUT response data:`, result);
 
       if (result.code === 200) {
         // 更新本地状态
@@ -259,7 +269,9 @@ export const useConversationsStore = defineStore("conversations", () => {
       console.error("更新对话标题失败:", err);
       return false;
     } finally {
-      loading.value = false;
+      if (!skipLoadingState) {
+        loading.value = false;
+      }
     }
   }
 
@@ -441,21 +453,28 @@ export const useConversationsStore = defineStore("conversations", () => {
       }> = await response.json();
 
       if (result.code === 200) {
-        // 更新本地状态
-        const conversation = conversations.value.find(
-          (conv) => conv.id === conversationId
-        );
-        if (conversation) {
-          conversation.title = result.data.title;
+        const generatedTitle = result.data.title;
+        console.log(`Title generation successful: ${generatedTitle}`);
+        
+        // 自动调用PUT API更新标题
+        try {
+          console.log(`Auto-updating conversation title to: ${generatedTitle}`);
+          console.log(`Calling updateConversationTitle with conversationId: ${conversationId}`);
+          const updateSuccess = await updateConversationTitle(conversationId, generatedTitle, true); // 传入true跳过loading状态
+          
+          if (updateSuccess) {
+            console.log('Title updated successfully via PUT API');
+            return generatedTitle;
+          } else {
+            console.error('Failed to update title via PUT API');
+            // 即使PUT失败，也返回生成的标题，因为生成是成功的
+            return generatedTitle;
+          }
+        } catch (updateError) {
+          console.error('Error calling PUT API:', updateError);
+          // 即使PUT失败，也返回生成的标题
+          return generatedTitle;
         }
-        if (
-          currentConversation.value &&
-          currentConversation.value.id === conversationId
-        ) {
-          currentConversation.value.title = result.data.title;
-        }
-
-        return result.data.title;
       } else {
         throw new Error(result.message);
       }

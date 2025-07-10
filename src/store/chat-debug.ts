@@ -28,6 +28,69 @@ export const useChatDebugStore = defineStore('chat-debug', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const streamContent = ref('')
+  
+  // Ollama思考模式状态管理
+  const isInThinkMode = ref(false)
+  const ollamaThinkBuffer = ref('')
+
+  // 处理Ollama的思考模式内容
+  function processOllamaContent(content: string, options?: { onDelta?: (delta: string, isReasoning?: boolean) => void }) {
+    ollamaThinkBuffer.value += content
+    
+    // 检查是否进入思考模式
+    if (ollamaThinkBuffer.value.includes('<think>') && !isInThinkMode.value) {
+      isInThinkMode.value = true
+      console.log('Entering Ollama think mode')
+      
+      // 处理<think>标签之前的内容作为正式回答
+      const beforeThink = ollamaThinkBuffer.value.split('<think>')[0]
+      if (beforeThink) {
+        console.log('Content before think:', JSON.stringify(beforeThink))
+        streamContent.value += beforeThink
+        options?.onDelta?.(beforeThink, false)
+      }
+      
+      // 重置buffer，准备收集思考内容
+      ollamaThinkBuffer.value = ollamaThinkBuffer.value.substring(ollamaThinkBuffer.value.indexOf('<think>') + 7)
+      return
+    }
+    
+    // 检查是否退出思考模式
+    if (ollamaThinkBuffer.value.includes('</think>') && isInThinkMode.value) {
+      console.log('Exiting Ollama think mode')
+      
+      // 提取思考内容
+      const thinkContent = ollamaThinkBuffer.value.split('</think>')[0]
+      if (thinkContent) {
+        console.log('Think content:', JSON.stringify(thinkContent))
+        options?.onDelta?.(thinkContent, true) // true表示这是思考内容
+      }
+      
+      // 处理</think>标签之后的内容作为正式回答
+      const afterThink = ollamaThinkBuffer.value.split('</think>')[1]
+      if (afterThink) {
+        console.log('Content after think:', JSON.stringify(afterThink))
+        streamContent.value += afterThink
+        options?.onDelta?.(afterThink, false)
+      }
+      
+      isInThinkMode.value = false
+      ollamaThinkBuffer.value = ''
+      return
+    }
+    
+    // 如果在思考模式中，累积思考内容
+    if (isInThinkMode.value) {
+      console.log('Accumulating think content:', JSON.stringify(content))
+      // 思考内容会在退出思考模式时一次性发送
+      return
+    }
+    
+    // 正常内容直接处理
+    console.log('Normal Ollama content:', JSON.stringify(content))
+    streamContent.value += content
+    options?.onDelta?.(content, false)
+  }
 
   // 调试版本的流式对话方法
   async function sendMessageStream(messages: ChatMessage[], conversationId?: number, options?: {
@@ -53,6 +116,10 @@ export const useChatDebugStore = defineStore('chat-debug', () => {
     loading.value = true
     error.value = null
     streamContent.value = ''
+    
+    // 重置Ollama思考模式状态
+    isInThinkMode.value = false
+    ollamaThinkBuffer.value = ''
 
     const req: ChatCompletionRequest = {
       id: aiModelsStore.currentModelId,
@@ -130,32 +197,104 @@ export const useChatDebugStore = defineStore('chat-debug', () => {
                 const parsed = JSON.parse(data)
                 console.log('Parsed data:', parsed)
                 
-                const choice = parsed.choices?.[0]
-                if (choice) {
-                  const delta = choice.delta
+                // 检查是否是ollama格式
+                if (parsed.message && parsed.message.content !== undefined) {
+                  // Ollama 格式处理
+                  console.log('Detected Ollama format')
                   
-                  // 处理思考内容 (reasoning_content)
-                  const reasoningContent = delta?.reasoning_content || ''
-                  if (reasoningContent) {
-                    console.log('Reasoning content:', JSON.stringify(reasoningContent))
-                    options?.onDelta?.(reasoningContent, true) // true表示这是思考内容
+                  const content = parsed.message.content || ''
+                  if (content) {
+                    // 使用新的思考模式处理函数
+                    processOllamaContent(content, options)
                   }
                   
-                  // 处理正式回答内容 (content)
-                  const responseContent = delta?.content || ''
-                  if (responseContent) {
-                    console.log('Response content:', JSON.stringify(responseContent))
-                    streamContent.value += responseContent
-                    options?.onDelta?.(responseContent, false) // false表示这是正式回答
+                  // 检查是否完成
+                  if (parsed.done === true) {
+                    console.log('Ollama stream complete - received done:true')
+                    loading.value = false
+                    
+                    // 如果还在思考模式中，需要处理剩余的思考内容
+                    if (isInThinkMode.value && ollamaThinkBuffer.value) {
+                      console.log('Processing remaining think content on completion')
+                      options?.onDelta?.(ollamaThinkBuffer.value, true)
+                    }
+                    
+                    // 重置状态
+                    isInThinkMode.value = false
+                    ollamaThinkBuffer.value = ''
+                    
+                    options?.onDone?.()
+                    return streamContent.value
                   }
                 } else {
-                  console.log('No choices in parsed data')
+                  // OpenAI 格式处理
+                  console.log('Detected OpenAI format')
+                  
+                  const choice = parsed.choices?.[0]
+                  if (choice) {
+                    const delta = choice.delta
+                    
+                    // 处理思考内容 (reasoning_content)
+                    const reasoningContent = delta?.reasoning_content || ''
+                    if (reasoningContent) {
+                      console.log('Reasoning content:', JSON.stringify(reasoningContent))
+                      options?.onDelta?.(reasoningContent, true) // true表示这是思考内容
+                    }
+                    
+                    // 处理正式回答内容 (content)
+                    const responseContent = delta?.content || ''
+                    if (responseContent) {
+                      console.log('Response content:', JSON.stringify(responseContent))
+                      streamContent.value += responseContent
+                      options?.onDelta?.(responseContent, false) // false表示这是正式回答
+                    }
+                  } else {
+                    console.log('No choices in parsed data')
+                  }
                 }
               } catch (err) {
                 console.error('Error parsing JSON:', err, 'Data was:', data)
               }
             } else {
-              console.log('Line does not start with "data:":', JSON.stringify(line))
+              // 尝试直接解析JSON（兼容ollama不带data:前缀的情况）
+              try {
+                const parsed = JSON.parse(line)
+                console.log('Parsed direct JSON:', parsed)
+                
+                // 检查是否是ollama格式
+                if (parsed.message && parsed.message.content !== undefined) {
+                  console.log('Detected Ollama format (direct JSON)')
+                  
+                  const content = parsed.message.content || ''
+                  if (content) {
+                    // 使用新的思考模式处理函数
+                    processOllamaContent(content, options)
+                  }
+                  
+                  // 检查是否完成
+                  if (parsed.done === true) {
+                    console.log('Ollama stream complete - received done:true (direct)')
+                    loading.value = false
+                    
+                    // 如果还在思考模式中，需要处理剩余的思考内容
+                    if (isInThinkMode.value && ollamaThinkBuffer.value) {
+                      console.log('Processing remaining think content on completion (direct)')
+                      options?.onDelta?.(ollamaThinkBuffer.value, true)
+                    }
+                    
+                    // 重置状态
+                    isInThinkMode.value = false
+                    ollamaThinkBuffer.value = ''
+                    
+                    options?.onDone?.()
+                    return streamContent.value
+                  }
+                } else {
+                  console.log('Line does not match expected formats:', JSON.stringify(line))
+                }
+              } catch (err) {
+                console.log('Line is not valid JSON:', JSON.stringify(line))
+              }
             }
           }
         }
@@ -184,6 +323,9 @@ export const useChatDebugStore = defineStore('chat-debug', () => {
     streamContent.value = ''
     error.value = null
     loading.value = false
+    // 重置Ollama思考模式状态
+    isInThinkMode.value = false
+    ollamaThinkBuffer.value = ''
   }
 
   return {
