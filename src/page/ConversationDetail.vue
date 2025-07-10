@@ -473,6 +473,46 @@ async function refreshConversation() {
   }
 }
 
+// 检查并生成标题
+async function checkAndGenerateTitle(conversationId: number) {
+  try {
+    // 获取当前对话标题
+    let currentTitle = conversation.value?.title || '新对话'
+    
+    // 如果标题是"新对话"，则自动生成标题
+    if (currentTitle === '新对话') {
+      console.log('检测到新对话，准备自动生成标题')
+      
+      // 构建消息列表用于生成标题
+      const messagesForTitle = displayMessages.value.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        name: msg.name
+      }))
+      
+      // 至少需要一轮对话（用户问题+AI回答）才生成标题
+      if (messagesForTitle.length >= 2) {
+        const generatedTitle = await conversationsStore.generateConversationTitle(conversationId, messagesForTitle)
+        
+        if (generatedTitle) {
+          console.log('自动生成标题成功:', generatedTitle)
+          
+          // 更新当前对话的标题显示（不触发页面刷新）
+          if (conversation.value) {
+            conversation.value.title = generatedTitle
+          }
+        } else {
+          console.log('自动生成标题失败')
+        }
+      } else {
+        console.log('消息数量不足，跳过标题生成')
+      }
+    }
+  } catch (error) {
+    console.error('检查和生成标题时出错:', error)
+  }
+}
+
 // 处理滚动事件
 function handleScroll() {
   // 可以在这里处理滚动相关逻辑，比如检测是否滚动到顶部加载更多消息
@@ -558,7 +598,7 @@ async function sendMessage() {
           console.log('Received delta:', delta, 'isReasoning:', isReasoning)
           startTypewriter(delta, isReasoning)
         },
-        onDone: () => {
+        onDone: async () => {
           console.log('Stream completed')
           
           // 将流式消息转换为正式消息，保留思考内容
@@ -591,6 +631,9 @@ async function sendMessage() {
           accumulatedContent = ''
           accumulatedReasoning = ''
           isAiResponding.value = false
+          
+          // 检查是否需要自动生成标题
+          await checkAndGenerateTitle(conversationId)
           
           // 不立即重新获取对话详情，避免显示旧数据
           // 让前端状态保持，用户可以继续对话或手动刷新

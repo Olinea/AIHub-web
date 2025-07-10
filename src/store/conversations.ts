@@ -407,31 +407,17 @@ export const useConversationsStore = defineStore("conversations", () => {
     }
   }
 
-  // 生成对话总汇标题
-  async function generateConversationSummaryTitle(conversationId: number) {
+  // 自动生成对话标题
+  async function generateConversationTitle(
+    conversationId: number,
+    messages: Array<{ role: string; content: string; name?: string | null }>
+  ) {
     if (!authStore.token) {
       error.value = "未授权";
       return null;
     }
 
-    if (
-      !currentConversation.value ||
-      currentConversation.value.id !== conversationId
-    ) {
-      error.value = "对话不存在或未加载";
-      return null;
-    }
-
-    loading.value = true;
-    error.value = null;
-
     try {
-      // 准备消息数据，转换为API需要的格式
-      const messages = currentConversation.value.messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      }));
-
       const response = await fetch("/api/v1/chat/generate-summary-title", {
         method: "POST",
         headers: {
@@ -455,28 +441,28 @@ export const useConversationsStore = defineStore("conversations", () => {
       }> = await response.json();
 
       if (result.code === 200) {
-        const generatedTitle = result.data.title;
-
-        // 自动更新对话标题
-        const updateSuccess = await updateConversationTitle(
-          conversationId,
-          generatedTitle
+        // 更新本地状态
+        const conversation = conversations.value.find(
+          (conv) => conv.id === conversationId
         );
-
-        if (updateSuccess) {
-          return generatedTitle;
-        } else {
-          throw new Error("生成标题成功但更新失败");
+        if (conversation) {
+          conversation.title = result.data.title;
         }
+        if (
+          currentConversation.value &&
+          currentConversation.value.id === conversationId
+        ) {
+          currentConversation.value.title = result.data.title;
+        }
+
+        return result.data.title;
       } else {
         throw new Error(result.message);
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : "生成对话标题失败";
       console.error("生成对话标题失败:", err);
+      error.value = err instanceof Error ? err.message : "生成标题失败";
       return null;
-    } finally {
-      loading.value = false;
     }
   }
 
@@ -512,6 +498,6 @@ export const useConversationsStore = defineStore("conversations", () => {
     deleteConversation,
     clearError,
     clearCurrentConversation,
-    generateConversationSummaryTitle,
+    generateConversationTitle,
   };
 });

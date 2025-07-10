@@ -6,7 +6,8 @@ import {
   Archive,
   Trash2,
   Edit3,
-  Plus
+  Plus,
+  Sparkles
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -140,6 +141,39 @@ function formatTime(timeStr?: string) {
     day: 'numeric'
   })
 }
+
+// 自动生成标题
+async function handleGenerateTitle(item: ChatItem) {
+  if (!item.id) return
+  
+  try {
+    // 获取对话详情来构建消息列表
+    const conversation = await conversationsStore.fetchConversationDetail(item.id)
+    if (!conversation || !conversation.messages || conversation.messages.length < 2) {
+      alert('对话内容不足，无法生成标题')
+      return
+    }
+    
+    // 构建消息列表
+    const messages = conversation.messages.map(msg => ({
+      role: msg.role,
+      content: msg.content,
+      name: msg.name
+    }))
+    
+    const generatedTitle = await conversationsStore.generateConversationTitle(item.id, messages)
+    
+    if (generatedTitle) {
+      // 成功生成标题的提示
+      console.log('标题已自动生成:', generatedTitle)
+    } else {
+      alert('生成标题失败，请稍后重试')
+    }
+  } catch (error) {
+    console.error('生成标题失败:', error)
+    alert('生成标题失败，请稍后重试')
+  }
+}
 </script>
 
 <template>
@@ -186,6 +220,10 @@ function formatTime(timeStr?: string) {
               <Edit3 class="text-muted-foreground" />
               <span>重命名</span>
             </DropdownMenuItem>
+            <DropdownMenuItem @click="handleGenerateTitle(item)" v-if="item.name === '新对话'">
+              <Sparkles class="text-muted-foreground" />
+              <span>生成标题</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem @click="copyLink(item)">
               <Link class="text-muted-foreground" />
@@ -196,10 +234,10 @@ function formatTime(timeStr?: string) {
               <span>在新标签页打开</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem @click="handleArchive(item.id)">
+            <!-- <DropdownMenuItem @click="handleArchive(item.id)">
               <Archive class="text-muted-foreground" />
               <span>归档</span>
-            </DropdownMenuItem>
+            </DropdownMenuItem> -->
             <DropdownMenuItem @click="handleDelete(item.id)" class="text-destructive">
               <Trash2 class="text-muted-foreground" />
               <span>删除</span>
