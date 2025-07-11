@@ -180,14 +180,14 @@ onMounted(() => {
           <h2 class="text-xl font-semibold">模型列表</h2>
           <div class="flex items-center gap-2">
             <!-- 过滤器切换 -->
-            <Button
+            <!-- <Button
               @click="showFilters = !showFilters"
               size="sm"
               variant="outline"
             >
               <Filter class="h-4 w-4 mr-2" />
               过滤器
-            </Button>
+            </Button> -->
             
             <!-- 刷新按钮 -->
             <Button @click="refreshData" size="sm" variant="outline" :disabled="aiModelsStore.loading">

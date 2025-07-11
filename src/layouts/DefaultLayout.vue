@@ -25,9 +25,9 @@
         </div>
         <div class="ml-auto px-3">
           <div class="flex items-center gap-2 text-sm">
-            <div class="hidden font-medium text-muted-foreground md:inline-block">
+            <!-- <div class="hidden font-medium text-muted-foreground md:inline-block">
               时间
-            </div>
+            </div> -->
             <DarkMode />
           </div>
         </div>

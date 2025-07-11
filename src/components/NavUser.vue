@@ -156,29 +156,6 @@
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-
-          <DropdownMenuGroup>
-            <DropdownMenuItem @click="handleMenuClick('upgrade')">
-              <Sparkles />
-              升级到专业版
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem @click="handleMenuClick('account')">
-              <BadgeCheck />
-              账户设置
-            </DropdownMenuItem>
-            <DropdownMenuItem @click="handleMenuClick('billing')">
-              <CreditCard />
-              计费管理
-            </DropdownMenuItem>
-            <DropdownMenuItem @click="handleMenuClick('notifications')">
-              <Bell />
-              通知设置
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
           <DropdownMenuItem @click="handleMenuClick('admin')" v-if="authStore.user?.isAdmin == 1">
             <Wrench />
             管理员功能

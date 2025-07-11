@@ -78,26 +78,8 @@
         isActive: false,
         onClick: handleSearchClick,
       },
-      {
-        title: 'Ask AI Role',
-        url: '#',
-        icon: Sparkles,
-        isActive: false,
-      },
     ],
     navSecondary: [
-      {
-        title: 'Settings',//ai设置
-        url: '/settings',
-        icon: Settings2,
-        isActive: route.path === '/settings',
-      },
-      {
-        title: 'Templates',//ai模板
-        url: '/templates',
-        icon: Blocks,
-        isActive: route.path === '/templates',
-      },
       {
         title: 'Help',// 系统帮助
         url: '/help',
@@ -105,7 +87,6 @@
         isActive: route.path === '/help',
       },
     ],
-    // 使用真实的对话数据
     chat: activeConversations.value.map(conversation => ({
       name: conversation.title,
       url: `/conversation/${conversation.id}`,

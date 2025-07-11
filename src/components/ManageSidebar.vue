@@ -3,11 +3,6 @@
   import { useRoute, useRouter } from 'vue-router'
   import {
     Users,
-    BarChart3,
-    Settings,
-    Shield,
-    Database,
-    FileText,
     Home,
     LogOut,
     Bot
@@ -46,41 +41,6 @@
       url: '/manage/ai-models',
       icon: Bot,
       isActive: route.path === '/manage/ai-models',
-    },
-    {
-      id: 'analytics',
-      title: '数据分析',
-      url: '/manage/analytics',
-      icon: BarChart3,
-      isActive: route.path === '/manage/analytics',
-    },
-    {
-      id: 'system',
-      title: '系统设置',
-      url: '/manage/system',
-      icon: Settings,
-      isActive: route.path === '/manage/system',
-    },
-    {
-      id: 'security',
-      title: '安全管理',
-      url: '/manage/security',
-      icon: Shield,
-      isActive: route.path === '/manage/security',
-    },
-    {
-      id: 'database',
-      title: '数据库',
-      url: '/manage/database',
-      icon: Database,
-      isActive: route.path === '/manage/database',
-    },
-    {
-      id: 'logs',
-      title: '日志管理',
-      url: '/manage/logs',
-      icon: FileText,
-      isActive: route.path === '/manage/logs',
     },
   ])
 

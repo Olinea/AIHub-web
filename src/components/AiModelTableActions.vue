@@ -40,8 +40,8 @@ async function toggleStatus() {
     const success = await aiModelsStore.toggleModelStatus(props.model.id)
     
     if (success) {
-      toast(props.model.isEnabled ? '模型已禁用' : '模型已启用', {
-        description: `模型“${props.model.modelName}”状态已${props.model.isEnabled ? '禁用' : '启用'}`
+      toast( '模型状态修改成功', {
+        description: `模型“${props.model.modelName}”状态已变更`
       })
       emit('refresh')
     } else {
@@ -130,14 +130,14 @@ async function testConnection() {
         编辑
       </DropdownMenuItem>
       
-      <DropdownMenuItem 
+      <!-- <DropdownMenuItem 
         @click="testConnection" 
         class="cursor-pointer"
         :disabled="testingConnection"
       >
         <TestTube class="h-4 w-4 mr-2" />
         测试连接
-      </DropdownMenuItem>
+      </DropdownMenuItem> -->
       
       <DropdownMenuItem 
         @click="toggleStatus" 
